@@ -1,0 +1,407 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>VideoEncoder_Project 帧间预测架构总结</title>
+    <script type="module">
+      import mermaid from 'https://cdn.jsdelivr.net/npm/mermaid@10/dist/mermaid.esm.min.mjs';
+      mermaid.initialize({ startOnLoad: true, theme: 'default' });
+    </script>
+    <style>
+        :root {
+            --primary: #0288d1;
+            --secondary: #0277bd;
+            --accent: #ff6f00;
+            --bg: #f8fafc;
+            --card-bg: #ffffff;
+        }
+        body { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif; line-height: 1.6; color: #333; margin: 0; padding: 0; display: flex; height: 100vh; overflow: hidden; background: var(--bg); }
+        .sidebar { width: 300px; background: white; border-right: 1px solid #e2e8f0; overflow-y: auto; padding: 30px; flex-shrink: 0; box-shadow: 2px 0 10px rgba(0,0,0,0.02); }
+        .sidebar h2.toc-title { font-size: 14px; color: #94a3b8; text-transform: uppercase; margin-bottom: 20px; letter-spacing: 1px; margin-top: 0; }
+        .sidebar ul { list-style: none; padding: 0; margin: 0; }
+        .sidebar li { margin-bottom: 8px; }
+        .sidebar a { color: #475569; text-decoration: none; display: block; padding: 8px 12px; border-radius: 6px; font-size: 14px; transition: all 0.2s; }
+        .sidebar a:hover { background: #f1f5f9; color: var(--primary); }
+        .sidebar a.active { background: #eff6ff; color: var(--primary); font-weight: 600; border-left: 3px solid var(--primary); }
+        .sidebar li.level-2 a { padding-left: 12px; }
+        .sidebar li.level-3 a { padding-left: 30px; font-size: 13px; color: #64748b; }
+        
+        .main-content { flex-grow: 1; overflow-y: auto; padding: 40px; scroll-behavior: smooth; }
+        .container { max-width: 1000px; margin: 0 auto; background: var(--card-bg); padding: 40px 60px; border-radius: 12px; box-shadow: 0 10px 30px rgba(0,0,0,0.08); }
+
+        h1 { color: var(--primary); text-align: center; border-bottom: 3px solid var(--secondary); padding-bottom: 15px; margin-bottom: 40px; }
+        h2 { color: var(--secondary); margin-top: 40px; border-left: 5px solid var(--secondary); padding-left: 15px; }
+        h3 { color: #555; }
+        
+        .highlight { background-color: #e3f2fd; border-left: 4px solid var(--secondary); padding: 15px; margin: 20px 0; border-radius: 0 4px 4px 0; }
+        .success { background-color: #e8f5e9; border-left: 4px solid #2e7d32; padding: 15px; margin: 20px 0; border-radius: 0 4px 4px 0; }
+        .critical-alert { background-color: #fef2f2; border-left: 6px solid #ef4444; padding: 16px; margin: 20px 0; border-radius: 0 8px 8px 0; }
+        .critical-keyword { background: #fecaca; padding: 2px 6px; border-radius: 4px; color: #991b1b; font-weight: 700; }
+        
+        .mermaid { display: flex; justify-content: center; margin: 30px 0; background: #fafafa; padding: 20px; border: 1px solid #eee; border-radius: 8px; }
+        .mermaid svg { width: 100% !important; height: auto !important; max-width: none !important; }
+        .diagram-caption { text-align: center; color: #7f8c8d; font-size: 0.9em; margin-top: -15px; margin-bottom: 30px; font-style: italic; }
+        
+        .top-nav { display: flex; flex-wrap: wrap; gap: 10px; margin-bottom: 25px; padding-bottom: 15px; border-bottom: 1px solid #e0e0e0; }
+        .top-nav-link { background: #f8fafc; color: var(--primary); padding: 8px 16px; border-radius: 20px; font-size: 13px; font-weight: 600; text-decoration: none; border: 1px solid #e2e8f0; transition: all 0.2s; }
+        .top-nav-link:hover { background: #e0f2fe; }
+        .top-nav-link.active { background: var(--primary); color: white; border-color: var(--primary); }
+
+        table { width: 100%; border-collapse: collapse; margin: 20px 0; }
+        th, td { border: 1px solid #e2e8f0; padding: 10px; text-align: left; }
+        th { background-color: #f1f5f9; color: #334155; }
+        tr:hover { background-color: #f8fafc; }
+
+        .algo-steps { margin-top: 20px; background-color: #f8f9fa; padding: 15px; border-left: 4px solid #0288d1; border-radius: 4px; color: #333; font-size: 0.95em; }
+        .algo-steps strong.title { color: #0288d1; display: block; margin-bottom: 10px; }
+        .algo-steps ol { margin: 0; padding-left: 20px; }
+        .algo-steps li { margin-bottom: 5px; }
+    </style>
+</head>
+<body>
+
+<div class="sidebar">
+    <h2 class="toc-title">目录导航</h2>
+    <ul id="toc-list"></ul>
+</div>
+
+<div class="main-content" id="main-content">
+<div class="container">
+    <div class="top-nav" id="top-nav"></div>
+    
+    <h1>VideoEncoder_Project 帧间预测与架构优化总结<br><span style="font-size:0.6em; color:#7f8c8d;">Inter Prediction Architecture & Hardware Bottlenecks</span></h1>
+
+    <h2>1. 帧间预测高阶架构总览</h2>
+    <p>VideoEncoder_Project 包含对多种标准（HEVC, AV1, H264）的 Inter Prediction（帧间预测）实现。本文档以 HEVC 帧间预测 (<code>hevc/inter_mode.c</code>) 作为基础模型，分析其运动估计（Motion Estimation, ME）与运动补偿（Motion Compensation, MC）的核心架构设计。</p>
+
+    <div class="mermaid">
+    flowchart LR
+      subgraph InputStage ["前端输入"]
+        direction TD
+        OrigPix["原始像素 (Orig)"]
+        RefPix["参考帧 (Ref)"]
+      end
+
+      subgraph ME ["运动估计 (ME)"]
+        direction TD
+        MVP["空域/时域 MVP 获取"]
+        Coarse["多级粗搜 (Coarse ME)"]
+        Refine["精搜 (Refine ME)"]
+        MVP --> Coarse --> Refine
+      end
+
+      subgraph MC ["运动补偿 (MC)"]
+        direction TD
+        Interp["亚像素插值滤波"]
+        ReconGen["重构像素生成"]
+        Interp --> ReconGen
+      end
+
+      subgraph RDO ["率失真优化 (RDO)"]
+        direction TD
+        MergeSkip["Merge/Skip 决策"]
+        ModeSel["最终模式选择"]
+        MergeSkip --> ModeSel
+      end
+
+      InputStage --> ME
+      ME -. "Best MV" .-> MC
+      MC -. "Pred Pixels" .-> RDO
+    </div>
+    <div class="diagram-caption">图 1：帧间预测完整数据流——从输入到最终模式选择的全链路架构</div>
+
+    <hr style="margin: 50px 0; border: 1px solid #e0e0e0;">
+
+    <h2>2. 运动矢量精度与 AMVR 机制</h2>
+
+    <div class="highlight">
+        <strong>💡 什么是 AMVR (Adaptive Motion Vector Resolution)？</strong><br>
+        传统编码器对所有 MV 统一使用 1/4 像素精度。AMVR 允许编码器根据内容自适应地选择 4 种精度级别：4-Pel（整像素×4）、整像素、半像素、1/4 像素。对于运动平缓的区域，使用低精度 MV 可以大幅节省比特开销。
+    </div>
+
+    <div class="mermaid">
+    flowchart LR
+      subgraph AMVR ["AMVR 精度选择流水线"]
+        direction LR
+        Input["原始 MV (1/16 内部精度)"]
+        Sel{"CU.imv 精度选择"}
+        P0["imv=0: 1/4 Pel"]
+        P1["imv=1: 整像素"]
+        P2["imv=2: 4-Pel"]
+        P3["imv=3: 半像素"]
+        Round["roundToPrecision()"]
+        Output["输出: 对齐后 MV"]
+        Input --> Sel
+        Sel --> P0 & P1 & P2 & P3
+        P0 & P1 & P2 & P3 --> Round --> Output
+      end
+
+      style Sel fill:#fff3e0,stroke:#f57c00
+      style Round fill:#e1f5fe,stroke:#0288d1
+    </div>
+    <div class="diagram-caption">图 2：AMVR 四级精度选择与 MV 对齐流水线</div>
+
+    <div class="algo-steps">
+        <strong class="title">📝 中文算法推导步骤 (AMVR 精度转换)</strong>
+        <ol>
+            <li><strong>精度映射：</strong>根据 CU 级别的 <code>imv</code> 标志（0~3），从 <code>m_amvrPrecision[]</code> 表中查出目标精度（1/4、整像素、4-Pel、半像素）。</li>
+            <li><strong>向下对齐：</strong>调用 <code>changePrecision(src → dst)</code> 将 MV 右移到目标精度，此过程中丢弃低位。</li>
+            <li><strong>向上还原：</strong>再调用 <code>changePrecision(dst → src)</code> 左移回内部表示精度，完成"Round-trip"对齐。</li>
+            <li><strong>核心效果：</strong>经过这组"先降后升"操作，MV 的低位被强制清零，等效于量化到目标精度网格上。</li>
+        </ol>
+    </div>
+
+    <hr style="margin: 50px 0; border: 1px solid #e0e0e0;">
+
+    <h2>3. 多级搜索范围配置 (Search Ranges)</h2>
+    <p>硬件 ME 模块对 P 帧与 B 帧的搜索范围做了精细划分，采用多级 (Stage) 搜索策略，逐级收敛搜索窗口，在保证编码质量的前提下极致节省搜索带宽。</p>
+    
+    <table>
+      <thead>
+        <tr>
+          <th>Stage</th>
+          <th>X 范围 (±pixels)</th>
+          <th>Y 范围 (±pixels)</th>
+          <th>降采样 (Shift)</th>
+          <th>Step (步长)</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr><td>0 (Coarse)</td><td>128</td><td>64</td><td>3</td><td>8</td></tr>
+        <tr><td>1 (Medium)</td><td>128</td><td>32 (LIMIT)</td><td>2</td><td>4</td></tr>
+        <tr><td>2 (Fine)</td><td>8</td><td>4</td><td>1</td><td>2</td></tr>
+        <tr><td>3 (Refine)</td><td>4 (or 2)</td><td>2 (or 1)</td><td>0</td><td>1</td></tr>
+        <tr><td>4 (SubPel)</td><td>1</td><td>1</td><td>0</td><td>1</td></tr>
+      </tbody>
+    </table>
+
+    <div class="mermaid">
+    flowchart LR
+      S0["Stage 0<br>128×64<br>Step=8"] --> S1["Stage 1<br>128×32<br>Step=4"]
+      S1 --> S2["Stage 2<br>8×4<br>Step=2"]
+      S2 --> S3["Stage 3<br>4×2<br>Step=1"]
+      S3 --> S4["Stage 4<br>SubPel<br>1×1"]
+      
+      style S0 fill:#fee2e2,stroke:#ef4444
+      style S1 fill:#ffedd5,stroke:#f97316
+      style S2 fill:#fef9c3,stroke:#eab308
+      style S3 fill:#dcfce7,stroke:#22c55e
+      style S4 fill:#e0f2fe,stroke:#0288d1
+    </div>
+    <div class="diagram-caption">图 3：ME 多级搜索逐级收敛示意——从粗到精的金字塔搜索策略</div>
+
+    <div class="critical-alert">
+      <strong style="color: #991b1b; display: block; margin-bottom: 8px;">🔥 架构优化突破：纵向搜索范围裁剪</strong>
+      在实际数据跑测中，算法团队发现：针对 B 帧与 P 帧，<span class="critical-keyword">将垂直搜索范围从 ±64 裁剪至 ±32</span>，可以在几乎不损失压缩率的前提下（仅某特定序列如 <code>SlideEditing_1280x720_30.yuv</code> 有显著影响，平均仅 0.6% BDR-Y 损失），大幅削减片上 SRAM 缓存和带宽。这是一种典型的以边界情况 (Corner Case) BDR 换取硬件极致面积的设计取舍。
+    </div>
+
+    <hr style="margin: 50px 0; border: 1px solid #e0e0e0;">
+
+    <h2>4. 空域与时域 MVP 获取机制</h2>
+
+    <h3>4.1 空域 MVP (Spatial MVP)</h3>
+    <p>在 <code>xGetNeighborAvailable</code> 函数中，对当前预测单元 (PU) 的周边块 (A0, A1, B0, B1, B2 等) 进行可用性判定和 MV 提取。</p>
+
+    <div class="mermaid">
+    flowchart LR
+      subgraph Spatial ["空域 MVP 取样位置"]
+        direction TD
+        B2["B2 (左上)"] --> B1["B1 (正上)"]
+        B1 --> B0["B0 (右上)"]
+        B2 --> A1["A1 (正左)"]
+        A1 --> A0["A0 (左下)"]
+        A1 --> CUR["当前 PU"]
+        B1 --> CUR
+      end
+
+      subgraph Check ["可用性校验"]
+        direction TD
+        C1["Z-Scan 可用性"]
+        C2["MTT 分区兼容"]
+        C3["Merge 并行级别"]
+        C4["Intra/Skip 过滤"]
+        C1 --> C2 --> C3 --> C4
+      end
+
+      Spatial -. "候选位置" .-> Check
+      Check -. "有效 MV" .-> Output["MVP 候选列表"]
+
+      style CUR fill:#ffcdd2,stroke:#d32f2f,stroke-width:2px,stroke-dasharray: 5 5
+      style Output fill:#e8f5e9,stroke:#2e7d32
+    </div>
+    <div class="diagram-caption">图 4：空域 MVP 的五邻接取样位置与四级可用性校验流</div>
+
+    <div class="algo-steps">
+        <strong class="title">📝 中文算法推导步骤 (空域 MVP 获取)</strong>
+        <ol>
+            <li><strong>位置计算：</strong>根据当前 PU 的坐标和尺寸，推导出 A0/A1/B0/B1/B2 五个邻接采样点的绝对坐标 (xN, yN)。</li>
+            <li><strong>同 CU 判断：</strong>快速检查 (xN, yN) 是否落在当前 CU 内部。若是同 CU，则直接引用本块数据，避免外部内存访问。</li>
+            <li><strong>Z-Scan 可用性：</strong>通过 <code>z_scan_availability()</code> 判断邻接块是否已编码完毕（编码顺序约束）。</li>
+            <li><strong>MTT 兼容修正：</strong>当 CU 采用非对称 MTT 划分（如 <code>mttDepth > 0</code>）时，对 B1/A1 进行特殊的 covering_cu 查找。</li>
+            <li><strong>Intra 过滤：</strong>若邻接块的预测模式为 <code>MODE_INTRA</code> 或 <code>MODE_IPCM</code>，标记为不可用。</li>
+            <li><strong>MV 提取：</strong>根据当前搜索阶段（1/4 像素、1/2 像素或最终 MV），从邻接 CU 的对应 MV 上下文中读取运动矢量。</li>
+        </ol>
+    </div>
+
+    <hr style="margin: 40px 0; border-top: 1px dashed #ccc;">
+
+    <h3>4.2 时域 MVP (Temporal MVP / TMVP)</h3>
+
+    <div class="highlight">
+        <strong>💡 什么是 TMVP (Temporal Motion Vector Prediction)？</strong><br>
+        TMVP 利用参考帧中与当前块<strong>同位置 (Colocated)</strong> 的已编码块的运动矢量，经过 POC 距离缩放后，作为当前块的 MV 候选。这是跨帧级别的运动预测，能有效捕捉帧间运动的时间连续性。
+    </div>
+
+    <div class="mermaid">
+    flowchart LR
+      CurFrame["当前帧 (Cur)"] -. "POC Distance" .-> ColFrame["参考帧 (Col)"]
+      
+      subgraph ColProcess ["时域 MV 提取流"]
+        direction TD
+        ColCU["Colocated CU 定位"]
+        RefList["参考列表选择<br>(bColFromL0Flag)"]
+        ScaleMV["MV 缩放<br>(tmvpScaleFactor)"]
+        ColCU --> RefList --> ScaleMV
+      end
+
+      ColFrame --> ColProcess
+      ColProcess -. "Scaled MV" .-> MVP["加入 MVP 列表"]
+
+      style ColFrame fill:#f5f5f5,stroke:#999
+      style ScaleMV fill:#e1f5fe,stroke:#0288d1
+      style MVP fill:#e8f5e9,stroke:#2e7d32
+    </div>
+    <div class="diagram-caption">图 5：TMVP 时域 MV 提取与 POC 缩放流水线</div>
+
+    <div class="algo-steps">
+        <strong class="title">📝 中文算法推导步骤 (TMVP 缩放)</strong>
+        <ol>
+            <li><strong>参考帧选择：</strong>根据 <code>bColFromL0Flag</code> 选择 L0 或 L1 参考帧作为 Colocated 帧。</li>
+            <li><strong>CU 定位：</strong>在 Colocated 帧中，通过 8×8（VVC）或 16×16（HEVC）粒度的压缩存储表，定位同位 CU 并读取其 MV。</li>
+            <li><strong>距离缩放：</strong>计算 <code>iScale = (tb × tx + 32) >> 6</code>，其中 tb 为当前帧与当前参考帧的 POC 差，td 为 Colocated 帧与其参考帧的 POC 差。</li>
+            <li><strong>MV 应用：</strong>通过 <code>scaleMv(iScale, colMv)</code> 对 Colocated MV 进行等比缩放后，加入候选列表。</li>
+        </ol>
+    </div>
+
+    <hr style="margin: 50px 0; border: 1px solid #e0e0e0;">
+
+    <h2>5. ME 精搜与 9 点菱形搜索</h2>
+    <p>在粗搜定位到初始最优 MV 后，精搜阶段采用 <strong>3×3 九点全搜索</strong>（Half-Pel 和 Quarter-Pel 各一轮），在初始最优点周围的 ±1 范围内遍历所有候选位置，选取 RD Cost 最小者。</p>
+
+    <div style="display: flex; flex-direction: column; gap: 30px;">
+        <!-- 纯 HTML 渲染的 9 点搜索网格 -->
+        <div style="background: #ffffff; border: 1px solid #e2e8f0; border-radius: 12px; padding: 30px; margin: 20px 0; box-shadow: 0 4px 6px rgba(0,0,0,0.02);">
+            <div style="display: flex; align-items: center; gap: 10px; margin-bottom: 15px;">
+                <span style="display: inline-block; width: 12px; height: 12px; background: var(--primary); border-radius: 50%;"></span>
+                <span style="font-size: 15px; font-weight: 700; color: #334155;">3×3 九点搜索网格 (硬件扫描顺序)</span>
+            </div>
+            <div style="display: grid; grid-template-columns: repeat(3, 80px); gap: 8px; justify-content: center;">
+                <div style="height: 60px; background: #e0f2fe; border: 1px solid #bae6fd; border-radius: 6px; display: flex; align-items: center; justify-content: center; font-size: 12px; font-weight: 600; color: #0369a1;">(-1,-1)</div>
+                <div style="height: 60px; background: #e0f2fe; border: 1px solid #bae6fd; border-radius: 6px; display: flex; align-items: center; justify-content: center; font-size: 12px; font-weight: 600; color: #0369a1;">(0,-1)</div>
+                <div style="height: 60px; background: #e0f2fe; border: 1px solid #bae6fd; border-radius: 6px; display: flex; align-items: center; justify-content: center; font-size: 12px; font-weight: 600; color: #0369a1;">(+1,-1)</div>
+                <div style="height: 60px; background: #e0f2fe; border: 1px solid #bae6fd; border-radius: 6px; display: flex; align-items: center; justify-content: center; font-size: 12px; font-weight: 600; color: #0369a1;">(-1, 0)</div>
+                <div style="height: 60px; background: #dcfce7; border: 2px solid #22c55e; border-radius: 6px; display: flex; align-items: center; justify-content: center; font-size: 12px; font-weight: 700; color: #166534;">Center ★</div>
+                <div style="height: 60px; background: #e0f2fe; border: 1px solid #bae6fd; border-radius: 6px; display: flex; align-items: center; justify-content: center; font-size: 12px; font-weight: 600; color: #0369a1;">(+1, 0)</div>
+                <div style="height: 60px; background: #e0f2fe; border: 1px solid #bae6fd; border-radius: 6px; display: flex; align-items: center; justify-content: center; font-size: 12px; font-weight: 600; color: #0369a1;">(-1,+1)</div>
+                <div style="height: 60px; background: #e0f2fe; border: 1px solid #bae6fd; border-radius: 6px; display: flex; align-items: center; justify-content: center; font-size: 12px; font-weight: 600; color: #0369a1;">(0,+1)</div>
+                <div style="height: 60px; background: #e0f2fe; border: 1px solid #bae6fd; border-radius: 6px; display: flex; align-items: center; justify-content: center; font-size: 12px; font-weight: 600; color: #0369a1;">(+1,+1)</div>
+            </div>
+            <div style="text-align: center; margin-top: 10px; font-size: 0.85em; color: #64748b;">硬件按行扫描顺序 (左上→右下)，确保 RD Cost 相同时 MV 结果与硬件一致</div>
+        </div>
+    </div>
+    <div class="diagram-caption">图 6：Half-Pel / Quarter-Pel 精搜的 3×3 九点全搜索网格</div>
+
+    <div class="success">
+        <strong>我们的硬件对齐策略：</strong><br>
+        代码中 <code>s_acMvRefineH[]</code> 和 <code>s_acMvRefineQ[]</code> 两张搜索偏移表的遍历顺序经过<strong>精心重排</strong>，严格匹配硬件的行扫描顺序 (左上→右下)。这确保了当两个候选位置的 RD Cost 完全相同时，C-Model 选出的位置与硬件选出的位置完全一致（<code>MEQN_SEARCH_REORDER_05</code> 宏控制）。
+    </div>
+
+</div>
+</div>
+
+<script>
+    document.addEventListener('DOMContentLoaded', () => {
+        const tocList = document.getElementById('toc-list');
+        const topNav = document.getElementById('top-nav');
+        const headers = document.querySelectorAll('.container h2:not(.toc-title), .container h3');
+        const mainContent = document.getElementById('main-content');
+        
+        headers.forEach((header, index) => {
+            const id = 'section-' + index;
+            header.id = id;
+            
+            const li = document.createElement('li');
+            li.className = header.tagName === 'H2' ? 'level-2' : 'level-3';
+            const a = document.createElement('a');
+            a.href = '#' + id;
+            a.textContent = header.textContent;
+            
+            a.addEventListener('click', (e) => {
+                e.preventDefault();
+                document.getElementById(id).scrollIntoView({ behavior: 'smooth' });
+                mainContent.scrollTo({ top: document.getElementById(id).offsetTop - 40, behavior: 'smooth' });
+            });
+            
+            li.appendChild(a);
+            tocList.appendChild(li);
+
+            if (header.tagName === 'H2' && topNav) {
+                const topA = document.createElement('a');
+                topA.href = '#' + id;
+                topA.className = 'top-nav-link';
+                topA.textContent = header.textContent;
+                topA.addEventListener('click', (e) => {
+                    e.preventDefault();
+                    mainContent.scrollTo({ top: document.getElementById(id).offsetTop - 40, behavior: 'smooth' });
+                });
+                topNav.appendChild(topA);
+            }
+        });
+        
+        mainContent.addEventListener('scroll', () => {
+            let currentId = '';
+            let currentH2Id = '';
+            headers.forEach(header => {
+                if (mainContent.scrollTop >= header.offsetTop - 100) {
+                    currentId = header.id;
+                    if (header.tagName === 'H2') currentH2Id = header.id;
+                }
+            });
+            
+            if (currentId) {
+                document.querySelectorAll('.sidebar a').forEach(link => {
+                    link.classList.remove('active');
+                    if (link.getAttribute('href') === '#' + currentId) link.classList.add('active');
+                });
+            }
+            if (currentH2Id) {
+                document.querySelectorAll('.top-nav-link').forEach(link => {
+                    link.classList.remove('active');
+                    if (link.getAttribute('href') === '#' + currentH2Id) link.classList.add('active');
+                });
+            } else if (currentId) {
+                let foundH2 = '';
+                for (let i = 0; i < headers.length; i++) {
+                    if (headers[i].id === currentId) {
+                        for (let j = i; j >= 0; j--) {
+                            if (headers[j].tagName === 'H2') { foundH2 = headers[j].id; break; }
+                        }
+                        break;
+                    }
+                }
+                if (foundH2) {
+                    document.querySelectorAll('.top-nav-link').forEach(link => {
+                        link.classList.remove('active');
+                        if (link.getAttribute('href') === '#' + foundH2) link.classList.add('active');
+                    });
+                }
+            }
+        });
+        
+        if(tocList.firstChild) tocList.firstChild.querySelector('a').classList.add('active');
+        if(topNav && topNav.firstChild) topNav.firstChild.classList.add('active');
+    });
+</script>
+</body>
+</html>
