@@ -731,44 +731,43 @@
     
     
     <div style="margin-top: 30px;">
-        <h4 style="color: #ef4444; border-bottom: 1px solid #fecaca; padding-bottom: 10px;">🔍 C-Model 核心印证：解耦获取机制的具体实现</h4>
-        <p>在底层的 <code>获取可用邻接块</code> 函数中，解耦机制被分为了三个精密设计的子模块：</p>
+        <h4 style="color: #ef4444; border-bottom: 1px solid #fecaca; padding-bottom: 10px;">🔍 核心印证：解耦机制与“两套账本”策略</h4>
+        <p>为了实现 100% 的并行化延迟掩盖，我们的硬件（及其对应的 C-Model）在底层获取可用邻接块时，彻底抛弃了同步等待，而是巧妙地采用了<strong>“两套相互独立、不同步更新的 MV 状态账本”</strong>的设计思想：</p>
 
-        <!-- Subsection 1 -->
-        <div style="background: #fef2f2; border: 1px solid #fecaca; border-radius: 8px; padding: 20px; margin-bottom: 25px;">
-            <h5 style="color: #b91c1c; margin-top: 0; font-size: 16px;">1. MEMD 粗略上下文字典</h5>
-            <p style="font-size: 14px; color: #450a0a;"><strong>算法原理：</strong>运动估计初步阶段 (MEMD) 跑完后，会立刻产生一个中间态的运动矢量。当后续流水线需要参考它时，如果去等漫长的算术编码 (CABAC) 结束，耗时极长。因此硬件设计了一个专用的缓存字典，强制透传这个半成品。</p>
-            
-            <div style="background: #1e1e1e; color: #d4d4d4; padding: 15px; border-radius: 6px; font-family: 'Consolas', monospace; font-size: 13px; margin: 15px 0; border-left: 4px solid #ef4444;">
-                <span style="color: #c586c0;">如果</span> ( 当前处于 <span style="color: #4fc1ff;">粗搜硬件流水线阶段</span> ) {<br>
-                &nbsp;&nbsp;&nbsp;&nbsp;<span style="color: #6a9955;">// 打断标准重构链，不等待真实结果</span><br>
-                &nbsp;&nbsp;&nbsp;&nbsp;定位邻居块的内存索引;<br>
-                &nbsp;&nbsp;&nbsp;&nbsp;预测方向 = 直接提取 <span style="color: #9cdcfe;">邻居块的粗搜缓存字典</span> 中的方向;<br>
-                &nbsp;&nbsp;&nbsp;&nbsp;预测矢量 = 直接提取 <span style="color: #9cdcfe;">邻居块的粗搜缓存字典</span> 中的运动矢量;<br>
-                }
+        <!-- Section 1 -->
+        <div style="background: #f8fafc; border: 1px solid #e2e8f0; border-radius: 8px; padding: 20px; margin-bottom: 25px;">
+            <div style="font-size: 14px; font-weight: bold; color: #475569; letter-spacing: 1px; border-bottom: 1px dotted #cbd5e1; margin-bottom: 15px; padding-bottom: 10px;">
+                1. 建立独立内部账本 (MEMD 粗略上下文)
             </div>
+            <ol style="padding-left: 20px; line-height: 1.8; margin: 0; color: #334155; font-size: 14px;">
+                <li><strong style="color: #0284c7;">官方账本 (RDO)：</strong> 必须等待真实像素经过完整的 DCT、量化、CABAC 这一套漫长的流程后，才能把最终盖棺定论的合规 MV 写入。如果前端去死等官方账本，流水线必然卡死。</li>
+                <li><strong style="color: #0284c7;">内部预估账本 (MEMD)：</strong> 运动估计前瞻阶段一旦算出一个大概的最优 MV，绝不等待后续重构，立刻将其写进专属的内部缓存账本（即 C-Model 中的 <code>memdMvCtx</code>）。</li>
+                <li><strong style="color: #0284c7;">查账与强行透传：</strong> 当底层函数发现当前仍处于初期的运动估计阶段时，直接打断标准重构链，强行定位并提取邻居块的 <code>memdMvCtx</code>，完成半成品数据的瞬间透传。</li>
+            </ol>
         </div>
 
-        <!-- Subsection 2 -->
-        <div style="background: #fef2f2; border: 1px solid #fecaca; border-radius: 8px; padding: 20px; margin-bottom: 25px;">
-            <h5 style="color: #b91c1c; margin-top: 0; font-size: 16px;">2. 特定精度预测子缓存</h5>
-            <p style="font-size: 14px; color: #450a0a;"><strong>算法原理：</strong>在多级精搜中，后续阶段可以直接把前序阶段的输出作为预测起点。底层专门维护了特定精度的缓存表，来保存历史搜索记录，避免重新提取。</p>
-
-            <div style="background: #1e1e1e; color: #d4d4d4; padding: 15px; border-radius: 6px; font-family: 'Consolas', monospace; font-size: 13px; margin: 15px 0; border-left: 4px solid #ef4444;">
-                <span style="color: #c586c0;">如果</span> ( 当前请求提取 <span style="color: #4fc1ff;">1/4 像素精度预测子</span> ) {<br>
-                &nbsp;&nbsp;&nbsp;&nbsp;预测矢量 = 读取 <span style="color: #9cdcfe;">邻居块的 1/4 像素级阵列缓存</span>;<br>
-                } <span style="color: #c586c0;">否则如果</span> ( 当前请求提取 <span style="color: #4fc1ff;">1/2 像素精度预测子</span> ) {<br>
-                &nbsp;&nbsp;&nbsp;&nbsp;预测矢量 = 读取 <span style="color: #9cdcfe;">邻居块的 半像素级阵列缓存</span>;<br>
-                }
+        <!-- Section 2 -->
+        <div style="background: #f8fafc; border: 1px solid #e2e8f0; border-radius: 8px; padding: 20px; margin-bottom: 25px;">
+            <div style="font-size: 14px; font-weight: bold; color: #475569; letter-spacing: 1px; border-bottom: 1px dotted #cbd5e1; margin-bottom: 15px; padding-bottom: 10px;">
+                2. 多级特定精度账本 (fracMvCtx)
             </div>
+            <ol style="padding-left: 20px; line-height: 1.8; margin: 0; color: #334155; font-size: 14px;">
+                <li><strong style="color: #0284c7;">精度分层维护：</strong> 精搜过程层层递进。算法底层专门维护了特定精度的缓存阵列 (<code>fracMvCtx</code>)，每一级精搜都会在对应的层级记录自己的历史账单。</li>
+                <li><strong style="color: #0284c7;">1/4 像素级直达：</strong> 当流水线处于 1/4 像素精搜，且需要提取预测子时，底层直奔邻居块的 1/4 像素级阵列缓存读取，丝毫不受后续逻辑干扰。</li>
+                <li><strong style="color: #0284c7;">1/2 像素级直达：</strong> 同理，半像素级精搜直接去半像素级阵列拿数据。这种“按需查账”避免了任何不必要的重复提取计算。</li>
+            </ol>
         </div>
 
-        <!-- Subsection 3 -->
-        <div style="background: #fef2f2; border: 1px solid #fecaca; border-radius: 8px; padding: 20px;">
-            <h5 style="color: #b91c1c; margin-top: 0; font-size: 16px;">3. 终极目标：打断依赖链，实现 100% 硬件流水线并行</h5>
-            <p style="font-size: 14px; color: #450a0a;"><strong>算法原理：</strong>由于底层通过上述两个缓存字典旁路了真实的数据流，宏块 N+1 的前端计算不再需要等待宏块 N 的后端收尾工作结束。这种时间轴上的完美重叠，彻底掩盖了硬件延迟。</p>
-            
-            <div style="text-align: center; margin: 20px 0;">
+        <!-- Section 3 -->
+        <div style="background: #f8fafc; border: 1px solid #e2e8f0; border-radius: 8px; padding: 20px; margin-bottom: 25px;">
+            <div style="font-size: 14px; font-weight: bold; color: #475569; letter-spacing: 1px; border-bottom: 1px dotted #cbd5e1; margin-bottom: 15px; padding-bottom: 10px;">
+                3. 终极目标：打断依赖链，实现 100% 硬件流水线并行
+            </div>
+            <ol style="padding-left: 20px; line-height: 1.8; margin: 0; color: #334155; font-size: 14px;">
+                <li><strong style="color: #0284c7;">完全异步读取 (Asynchronous Read)：</strong> 下一个宏块 (CTU N+1) 的 MEMD 启动并需要获取左侧预测子时，它根本不去查 RDO 缓慢的“官方账本”，而是直接去隔壁抓取刚出炉的“内部账本”。</li>
+                <li><strong style="color: #0284c7;">零延迟重叠掩盖：</strong> 如此一来，前端的 MEMD 永远在高速奔跑（靠互交内部账本维持满载并行），而后端 RDO 慢慢结算。在时间轴上，宏块 N+1 的前端计算与宏块 N 的后端 RDO 延展计算实现了<strong>完美的重叠掩盖</strong>，Bubble 瞬间破除。</li>
+            </ol>
+            <div style="text-align: center; margin-top: 20px;">
                 <img src="../assets/gantt_chart.svg" alt="甘特图" style="max-width: 100%; height: auto; box-shadow: 0 4px 6px rgba(0,0,0,0.05); border-radius: 8px;">
             </div>
         </div>
