@@ -686,7 +686,7 @@
         </tr>
         <tr>
           <td><strong>数据源约束 (突破口)</strong></td>
-          <td><span class="critical-keyword">可能使用原始像素的伪 MV</span> 或延迟一个 CTB 的粗略缓存，以打破数据依赖</td>
+          <td>读取早期流水线产生（尚未完全定型）的 <strong>memdMvCtx 或 fracMvCtx 缓存态 MV</strong>，彻底打破重构流水线的数据依赖</td>
           <td>必须使用 100% 标准合规的<strong>完全重构 MV</strong>，否则解码端会引发宏块崩溃 (Mismatch)</td>
         </tr>
         <tr>
