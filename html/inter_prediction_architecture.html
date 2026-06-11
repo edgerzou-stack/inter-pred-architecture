@@ -820,6 +820,22 @@
         硬件设计中，数据流是严格的单向传递（ME -> MC -> RDO）。RDO 计算完的比特或者真实的 SAD，绝不允许反向流回 ME 指导下一步动作，否则会形成致命的组合逻辑环路 (Combinational Loop)。
     </div>
 
+    <!-- Handshake Diagram Section -->
+    <div style="background: #fafaf9; border: 1px solid #e7e5e4; border-radius: 12px; padding: 25px; margin: 30px 0; box-shadow: 0 4px 6px rgba(0,0,0,0.02);">
+        <div style="font-size: 15px; font-weight: 700; color: #44403c; margin-bottom: 15px; border-bottom: 2px solid #d6d3d1; padding-bottom: 8px;">
+            🧑‍💼 核心协作模型：“初试官”与“终面大老板”
+        </div>
+        <p style="font-size: 13px; color: #57534e; line-height: 1.6; margin-bottom: 20px;">
+            整个 Inter 预测与 RDO 的分工非常明确：<br>
+            <strong>ME 引擎 (前端)</strong> 扮演“初试官”，在海量可能的运动矢量中，用较粗略的代价 (SATD) 快速筛选出最具潜力的 <strong>3 组精英候选</strong>。<br>
+            <strong>RDO 模块 (后端)</strong> 扮演“终面老板”，它接收这 3 组候选后，启动最昂贵的计算资源 (真正的 DCT/Quant/CABAC)，以真实的码率和失真计算出最精确的 Cost，并敲定最终写入码流的唯一 <strong>Best MV</strong>。
+        </p>
+        <div style="text-align: center;">
+            <img src="../assets/me_rdo_handshake.svg" alt="ME 与 RDO 握手架构" style="max-width: 100%; height: auto; box-shadow: 0 4px 6px rgba(0,0,0,0.05); border-radius: 8px;">
+        </div>
+    </div>
+
+
     <table>
       <thead>
         <tr>
