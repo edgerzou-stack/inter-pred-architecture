@@ -21,11 +21,11 @@
         <circle cx="110" cy="50" r="4" fill="#94a3b8"/>
         <circle cx="50" cy="70" r="4" fill="#94a3b8"/>
         <circle cx="80" cy="70" r="6" fill="#10b981"/> <!-- Winner -->
-        <text x="80" y="92" font-size="10" fill="#10b981" font-weight="bold" text-anchor="middle">最优 Int-MV</text>
         <circle cx="110" cy="70" r="4" fill="#94a3b8"/>
         <circle cx="50" cy="90" r="4" fill="#94a3b8"/>
         <circle cx="80" cy="90" r="4" fill="#94a3b8"/>
         <circle cx="110" cy="90" r="4" fill="#94a3b8"/>
+        <text x="80" y="105" font-size="10" fill="#10b981" font-weight="bold" text-anchor="middle">最优 Int-MV</text>
     </g>
 
     <!-- Arrow 1 -->
@@ -43,10 +43,10 @@
         <circle cx="50" cy="70" r="3" fill="#7dd3fc"/>
         <circle cx="80" cy="70" r="4" fill="#94a3b8" stroke="#10b981" stroke-width="2"/> <!-- Previous Winner as center -->
         <circle cx="110" cy="70" r="6" fill="#f59e0b"/> <!-- New Winner -->
-        <text x="110" y="92" font-size="10" fill="#d97706" font-weight="bold" text-anchor="middle">最优 Half-MV</text>
         <circle cx="50" cy="90" r="3" fill="#7dd3fc"/>
         <circle cx="80" cy="90" r="3" fill="#7dd3fc"/>
         <circle cx="110" cy="90" r="3" fill="#7dd3fc"/>
+        <text x="110" y="105" font-size="10" fill="#d97706" font-weight="bold" text-anchor="middle">最优 Half-MV</text>
     </g>
 
     <!-- Arrow 2 -->
@@ -60,13 +60,13 @@
         <circle cx="50" cy="50" r="2" fill="#fca5a5"/>
         <circle cx="80" cy="50" r="2" fill="#fca5a5"/>
         <circle cx="110" cy="50" r="6" fill="#8b5cf6"/> <!-- New Winner -->
-        <text x="110" y="38" font-size="10" fill="#7c3aed" font-weight="bold" text-anchor="middle">最终最优 Q-MV</text>
         <circle cx="50" cy="70" r="2" fill="#fca5a5"/>
         <circle cx="80" cy="70" r="4" fill="#94a3b8" stroke="#f59e0b" stroke-width="2"/> <!-- Previous Winner -->
         <circle cx="110" cy="70" r="2" fill="#fca5a5"/>
         <circle cx="50" cy="90" r="2" fill="#fca5a5"/>
         <circle cx="80" cy="90" r="2" fill="#fca5a5"/>
         <circle cx="110" cy="90" r="2" fill="#fca5a5"/>
+        <text x="110" y="105" font-size="10" fill="#7c3aed" font-weight="bold" text-anchor="middle">最终最优 Q-MV</text>
     </g>
 
     <text x="400" y="200" font-size="12" fill="#64748b" text-anchor="middle">【贪心机制】：由于每一级精搜的“搜索网格中心”都死死绑定在上一级算出的最优点上，因此底层必须缓存特定层级的 fracMvCtx。</text>
