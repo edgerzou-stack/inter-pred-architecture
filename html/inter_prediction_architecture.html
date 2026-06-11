@@ -928,6 +928,21 @@
             </div>
         </div>
     </div>
+
+    
+    <div style="background: #fafaf9; border: 1px solid #e7e5e4; border-radius: 12px; padding: 25px; margin: 30px 0; box-shadow: 0 4px 6px rgba(0,0,0,0.02);">
+        <div style="font-size: 15px; font-weight: 700; color: #44403c; margin-bottom: 15px; border-bottom: 2px solid #d6d3d1; padding-bottom: 8px;">
+            🛡️ Inter 预测局部 PK 与复用策略 (Mode Decision 降维策略)
+        </div>
+        <p style="font-size: 13px; color: #57534e; line-height: 1.6; margin-bottom: 20px;">
+            为了进一步降低超大块在模式决策阶段 (Mode Decision / RDO PK) 的计算复杂度，当 CU 大小超过 TU 最大处理能力 (32x32) 时，硬件采取了<strong>“左上角 / 上半部 PK 决出最优 Mode，其余子块直接无脑复用 (Reuse)”</strong>的极简策略。<br>
+            这与上面提到的 MV 均值推导互为表里：MV 可以靠平均凑出来，但 Mode Decision（选什么模式最优）由于需要跑代价公式，直接选用代表性区域的结果即可。下图直观展示了 Luma (最大 64x64) 与 Chroma (最大 32x32) 在各类 MTT 划分下的 PK 与复用策略。
+        </p>
+        <div style="text-align: center;">
+            <img src="../assets/cu64_inter_pk_strategy.svg" alt="CU64 局部 PK 策略" style="max-width: 100%; height: auto; box-shadow: 0 4px 6px rgba(0,0,0,0.05); border-radius: 8px;">
+        </div>
+    </div>
+
     
 </div>
 </div>
