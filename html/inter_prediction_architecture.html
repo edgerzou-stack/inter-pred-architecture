@@ -702,6 +702,16 @@
       在我们的硬件设计中，最大的瓶颈在于 RDO 对重构 MV 的强数据依赖，这会导致后续流水线气泡 (Bubble)。为了解决这个问题，我们的 <strong>ME 模块完全脱离标准约束</strong>，建立了一套自己专用的、仅依赖于粗略流水阶段的“前端缓存字典”。这意味着 ME 拿到的 MVP 可能在数值上与标准 RDO 的 MVP 有偏差，但能实现 100% 的并行化延迟掩盖，而 RDO 依然恪守标准的重构流。
     </div>
 
+    <div class="algo-steps" style="border-left-color: #ef4444; background-color: #fef2f2;">
+        <strong class="title" style="color: #ef4444;">🔍 C-Model 代码印证：解耦获取机制 (xGetNeighborAvailable)</strong>
+        <p style="margin-top: 5px; font-size: 13px;">在我们的 C-Model (<code>inter_mode.c</code>) 中，这种“前端字典掩盖延迟”的设计体现得淋漓尽致。当执行 <code>xGetNeighborAvailable()</code> 时，并非总是去拿最终的重构 MV，而是根据硬件流水线级数 <code>cuRefineStage</code> 或 <code>mvpMode</code> 切换底层数据源：</p>
+        <ol style="font-size: 13px;">
+            <li><strong>MEMD 粗略上下文 (HW_STAGE_MEMD)：</strong> 当流水线处于前端的 MEMD 阶段时，代码强制越过标准重构结构，从专属的 <code>pneighbor_cu->memdMvCtx</code> 中读取。这个 Context 缓存的是邻接块在早期流水线刚刚产生的“半成品”结果。</li>
+            <li><strong>特定精度预测子 (fracMvCtx)：</strong> 针对层层递进的精搜，代码支持直接读取 <code>NEIGHBOR_1_4_MV</code> (1/4像素) 或 <code>NEIGHBOR_1_2_MV</code> (半像素) 的 <code>fracMvCtx</code> 缓存。</li>
+            <li><strong>打断依赖链 (100% 并行化)：</strong> 这意味着当前宏块的 ME 引擎，<strong>绝不需要</strong>等待其左侧宏块跑完漫长的 RDO 与 CABAC。只要左侧宏块跑完了初期的 MEMD，当前宏块就能无缝拿到 <code>memdMvCtx</code> 这个“伪 MVP”并立即发射。在硬件流水线甘特图上，这完美实现了 <strong>ME(块N) 与 RDO(块N-1) 的 100% 时间重叠掩盖</strong>。</li>
+        </ol>
+    </div>
+
     <hr style="margin: 50px 0; border: 1px solid #e0e0e0;">
 
     <h2>5. ME 精搜与 9 点菱形搜索</h2>
