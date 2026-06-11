@@ -106,8 +106,8 @@
       end
 
       InputStage --> ME
-      ME -. "Best MV" .-> MC
-      MC -. "Pred Pixels" .-> RDO
+      ME -.->|"Best MV"| MC
+      MC -.->|"Pred Pixels"| RDO
     </div>
     <div class="diagram-caption">图 1：帧间预测完整数据流——从输入到最终模式选择的全链路架构</div>
 
@@ -224,8 +224,8 @@
         C1 --> C2 --> C3 --> C4
       end
 
-      Spatial -. "候选位置" .-> Check
-      Check -. "有效 MV" .-> Output["MVP 候选列表"]
+      Spatial -.->|"候选位置"| Check
+      Check -.->|"有效 MV"| Output["MVP 候选列表"]
 
       style CUR fill:#ffcdd2,stroke:#d32f2f,stroke-width:2px,stroke-dasharray: 5 5
       style Output fill:#e8f5e9,stroke:#2e7d32
@@ -255,7 +255,7 @@
 
     <div class="mermaid">
     flowchart LR
-      CurFrame["当前帧 (Cur)"] -. "POC Distance" .-> ColFrame["参考帧 (Col)"]
+      CurFrame["当前帧 (Cur)"] -.->|"POC Distance"| ColFrame["参考帧 (Col)"]
       
       subgraph ColProcess ["时域 MV 提取流"]
         direction TD
@@ -266,7 +266,7 @@
       end
 
       ColFrame --> ColProcess
-      ColProcess -. "Scaled MV" .-> MVP["加入 MVP 列表"]
+      ColProcess -.->|"Scaled MV"| MVP["加入 MVP 列表"]
 
       style ColFrame fill:#f5f5f5,stroke:#999
       style ScaleMV fill:#e1f5fe,stroke:#0288d1
