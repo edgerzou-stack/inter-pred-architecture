@@ -760,15 +760,16 @@
             </div>
         </div>
 
-        <!-- Section 3 -->
-        <div style="background: #f8fafc; border: 1px solid #e2e8f0; border-radius: 8px; padding: 20px; margin-bottom: 25px;">
-            <div style="font-size: 14px; font-weight: bold; color: #475569; letter-spacing: 1px; border-bottom: 1px dotted #cbd5e1; margin-bottom: 15px; padding-bottom: 10px;">
-                3. 终极目标：打断依赖链，实现 100% 硬件流水线并行
+        <!-- The Result: Section 3 is not a strategy, but the outcome -->
+        <div style="background: #f0fdf4; border: 1px solid #bbf7d0; border-radius: 8px; padding: 20px; margin-bottom: 25px;">
+            <div style="font-size: 14px; font-weight: bold; color: #166534; letter-spacing: 1px; border-bottom: 1px dotted #86efac; margin-bottom: 15px; padding-bottom: 10px;">
+                🎯 终极结果：打断依赖链，实现 100% 硬件流水线并行
             </div>
-            <ol style="padding-left: 20px; line-height: 1.8; margin: 0; color: #334155; font-size: 14px;">
-                <li><strong style="color: #0284c7;">完全异步读取 (Asynchronous Read)：</strong> 下一个宏块 (CTU N+1) 的 MEMD 启动并需要获取左侧预测子时，它根本不去查 RDO 缓慢的“官方账本”，而是直接去隔壁抓取刚出炉的“内部账本”。</li>
-                <li><strong style="color: #0284c7;">零延迟重叠掩盖：</strong> 如此一来，前端的 MEMD 永远在高速奔跑（靠互交内部账本维持满载并行），而后端 RDO 慢慢结算。在时间轴上，宏块 N+1 的前端计算与宏块 N 的后端 RDO 延展计算实现了<strong>完美的重叠掩盖</strong>，Bubble 瞬间破除。</li>
-            </ol>
+            <p style="font-size: 14px; color: #166534; line-height: 1.8; margin: 0;">
+                由于底层的 MEMD 和多级精搜通过上述<strong>“两套独立账本”</strong>旁路了真实的数据流，宏块 N+1 的前端计算（如获取左侧预测子）完全不需要等待宏块 N 的后端 RDO 收尾工作结束。
+                <br><br>
+                在硬件时间轴上，宏块 N+1 的前端计算与宏块 N 的后端 RDO 延展计算实现了<strong>完美的零延迟重叠掩盖</strong>，彻底消除了流水线 Bubble。
+            </p>
             <div style="text-align: center; margin-top: 20px;">
                 <img src="../assets/gantt_chart.svg" alt="甘特图" style="max-width: 100%; height: auto; box-shadow: 0 4px 6px rgba(0,0,0,0.05); border-radius: 8px;">
             </div>
