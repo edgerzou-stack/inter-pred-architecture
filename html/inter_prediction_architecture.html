@@ -916,9 +916,10 @@
                 Inter 引擎在架构上<strong>保留</strong>了 CU64 甚至 MTT（如 BT/TT）的概念，但通过<strong>子块均值融合</strong>来规避庞大的搜索开销：
             </p>
             <ul style="font-size: 13.5px; color: #475569; padding-left: 20px; line-height: 1.6;">
-                <li><strong>CU64x64：</strong> 其 MV 直接由底层的 4 个 32x32 MV 求平均得到 (<code>average of 4 CU32x32 mvs</code>)。</li>
-                <li><strong>CU64_BT (如 64x32)：</strong> 由覆盖的 2 个 32x32 MV 求平均得到。</li>
-                <li><strong>CU64_TT 中间大块：</strong> 由覆盖的 4 个 32x32 MV 求平均得到。</li>
+                <li><strong>时序依赖 (Timing Dependency)：</strong>并不是只算一个左上角的 32x32 就能提前决定。引擎<strong>必须等待</strong>这片 64x64 区域底下的所有相关 32x32 子块<strong>全部跑完</strong>各自的 ME (整数搜) 之后，才能向上汇总。</li>
+                <li><strong>CU64x64：</strong> 必须等到底层 4 个 32x32 全部做完，然后将其 4 个 MV 取平均 (<code>average of 4 CU32x32 mvs</code>) 作为 64x64 的 MV。</li>
+                <li><strong>CU64_BT (如 64x32)：</strong> 必须等覆盖该区域的 2 个 32x32 做完，取这 2 个 MV 的平均。</li>
+                <li><strong>CU64_TT 中间块：</strong> 等待覆盖区域的 4 个 32x32 做完取平均。</li>
             </ul>
             <div style="background: #eff6ff; padding: 10px; border-left: 4px solid #3b82f6; font-size: 12.5px; color: #1e40af; margin-top: 15px;">
                 <strong>💡 C-Model 理论依据：</strong><br>
@@ -934,8 +935,8 @@
             </p>
             <ul style="font-size: 13.5px; color: #475569; padding-left: 20px; line-height: 1.6;">
                 <li><strong>编译期封杀：</strong> 源码 <code>intra_mode.h</code> 直接写死宏开关 <code>#define NO_CU_64x64 1</code>。</li>
-                <li><strong>强制四分法：</strong> 在 C-Model 中，一个 64x64 的预测块被无条件视作四个 32x32 进行独立处理。</li>
-                <li><strong>Cost 物理叠加：</strong> CU64 的最终代价，等于底层四个独立的 32x32 代价的纯物理相加，它仅仅是一个逻辑上的壳子。</li>
+                <li><strong>强制四分法：</strong> 遇到 64x64 时，强制拆解为四个独立的 32x32 进行并发处理。</li>
+                <li><strong>等待机制 (Cost 物理叠加)：</strong> 必须等待这四个独立的 32x32 全部完成 Intra Prediction 并得出各自的最佳代价后，将它们 <strong>纯物理相加</strong>（<code>cost = rdc->cost[offset32] + ... + rdc->cost[offset32 + 3]</code>），才能得到这个所谓的 CU64 总代价。</li>
             </ul>
             <div style="background: #fff1f2; padding: 10px; border-left: 4px solid #e11d48; font-size: 12.5px; color: #9f1239; margin-top: 15px;">
                 <strong>💡 架构启示：</strong><br>
