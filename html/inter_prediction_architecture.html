@@ -838,7 +838,7 @@
               <strong>候选数量：</strong>标准做法是强制透传 <strong>3 组最优候选</strong>给 RDO：<br>
               1. <strong>Top 1 L0 MV</strong> (前向最优)<br>
               2. <strong>Top 1 L1 MV</strong> (后向最优)<br>
-              3. <strong>Bi-pred MV Pair</strong> (通常直接取 L0 和 L1 的最优组合作双向测试)。<br>
+              3. <strong>Bi-pred MV Pair</strong> (并非简单的 L0+L1 组合，在 C-Model 中由专门的 <code>xPatternRefinementBI()</code> 或 <code>xInterBiCost()</code> 针对双向联合代价面进行了专有精搜提纯)。<br>
               <strong>RDO 使用场景：</strong>RDO 会依次让这 3 组 MV 减去后端精准计算的 AMVP Predictor，送入 CABAC 算真实的 MVD Bits，并基于变换量化 (T/Q) 算出真实的 SSD 失真，最终决出胜者。
             </div>
           </td>
