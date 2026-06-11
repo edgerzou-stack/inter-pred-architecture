@@ -575,6 +575,50 @@
         </ol>
     </div>
 
+    <h3>4.3 RDO 与 ME 中 MVP 机制的硬件架构对比</h3>
+    
+    <div class="highlight">
+        <strong>💡 核心差异：搜索起点预测 vs. 最终模式决策</strong><br>
+        虽然 RDO (Rate Distortion Optimization) 和 ME (Motion Estimation) 都使用空域和时域 MVP，但它们在硬件架构上的定位和提取机制有着本质的区别。ME 的 MVP 旨在为搜索提供<strong>优良的起点</strong>以节省带宽，而 RDO 的 MVP (如 Merge List 和 AMVP List) 则直接作为<strong>最终编码模式的候选</strong>被严格评估。
+    </div>
+
+    <table>
+      <thead>
+        <tr>
+          <th>对比维度</th>
+          <th>ME (运动估计) 前端 MVP 机制</th>
+          <th>RDO (率失真优化) 后端 MVP 机制</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr>
+          <td><strong>核心目标</strong></td>
+          <td>寻找起始搜索中心，降低 MVD 代价，快速收敛搜索</td>
+          <td>严格遵守视频标准构建候选列表，进行精确比特流和失真评估</td>
+        </tr>
+        <tr>
+          <td><strong>硬件流水线位置</strong></td>
+          <td>处于流水线极前端，通常与重构环路解耦</td>
+          <td>处于流水线后端，必须等待真实像素重构和 CABAC 状态更新</td>
+        </tr>
+        <tr>
+          <td><strong>数据源约束 (突破口)</strong></td>
+          <td><span class="critical-keyword">可能使用原始像素的伪 MV</span> 或延迟一个 CTB 的粗略缓存，以打破数据依赖</td>
+          <td>必须使用 100% 标准合规的<strong>完全重构 MV</strong>，否则解码端会引发宏块崩溃 (Mismatch)</td>
+        </tr>
+        <tr>
+          <td><strong>列表构建与修剪 (Pruning)</strong></td>
+          <td>粗略且贪心，一旦获取有效预测子即刻启动搜索，无复杂去重逻辑</td>
+          <td>极其严苛，包含繁复的满载修剪 (Pruning)、双向结合及零矢量填充 (Zero Padding)</td>
+        </tr>
+      </tbody>
+    </table>
+
+    <div class="critical-alert">
+      <strong style="color: #991b1b; display: block; margin-bottom: 8px;">🔥 架构优化突破：ME 与 RDO 的 MVP 彻底解耦 (Decoupling)</strong>
+      在我们的硬件设计中，最大的瓶颈在于 RDO 对重构 MV 的强数据依赖，这会导致后续流水线气泡 (Bubble)。为了解决这个问题，我们的 <strong>ME 模块完全脱离标准约束</strong>，建立了一套自己专用的、仅依赖于粗略流水阶段的“前端缓存字典”。这意味着 ME 拿到的 MVP 可能在数值上与标准 RDO 的 MVP 有偏差，但能实现 100% 的并行化延迟掩盖，而 RDO 依然恪守标准的重构流。
+    </div>
+
     <hr style="margin: 50px 0; border: 1px solid #e0e0e0;">
 
     <h2>5. ME 精搜与 9 点菱形搜索</h2>
