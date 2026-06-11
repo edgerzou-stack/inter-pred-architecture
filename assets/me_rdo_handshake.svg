@@ -1,13 +1,13 @@
 <svg viewBox="0 0 850 350" width="100%" height="auto" xmlns="http://www.w3.org/2000/svg" style="background-color: #ffffff; border-radius: 8px; border: 1px solid #e2e8f0; font-family: sans-serif;">
     <defs>
-        <marker id="arrowhead" markerWidth="16" markerHeight="12" refX="15" refY="6" orient="auto">
-            <polygon points="0 0, 16 6, 0 12" fill="#475569" />
+        <marker id="arrowhead" markerWidth="10" markerHeight="7" refX="9" refY="3.5" orient="auto">
+            <polygon points="0 0, 10 3.5, 0 7" fill="#64748b" />
         </marker>
-        <marker id="arrowhead-blue" markerWidth="14" markerHeight="10" refX="13" refY="5" orient="auto">
-            <polygon points="0 0, 14 5, 0 10" fill="#2563eb" />
+        <marker id="arrowhead-blue" markerWidth="10" markerHeight="7" refX="9" refY="3.5" orient="auto">
+            <polygon points="0 0, 10 3.5, 0 7" fill="#3b82f6" />
         </marker>
-        <marker id="arrowhead-green" markerWidth="14" markerHeight="10" refX="13" refY="5" orient="auto">
-            <polygon points="0 0, 14 5, 0 10" fill="#059669" />
+        <marker id="arrowhead-green" markerWidth="10" markerHeight="7" refX="9" refY="3.5" orient="auto">
+            <polygon points="0 0, 10 3.5, 0 7" fill="#10b981" />
         </marker>
         
         <linearGradient id="meGrad" x1="0%" y1="0%" x2="100%" y2="100%">
@@ -39,18 +39,20 @@
         <text x="130" y="65" font-size="12" font-weight="bold" fill="#1e3a8a" text-anchor="middle">多级精搜 (基于 MVP 的有限网格)</text>
         <text x="130" y="85" font-size="11" fill="#475569" text-anchor="middle">代价计算: 估算 SATD + 简单 Bits</text>
         
-        <path d="M 130 95 L 130 120" stroke="#3b82f6" stroke-width="3" fill="none" marker-end="url(#arrowhead-blue)"/>
+        <!-- Adjusted vertical arrow to avoid text overlap -->
+        <path d="M 130 95 L 130 115" stroke="#3b82f6" stroke-width="2" fill="none" marker-end="url(#arrowhead-blue)"/>
         
         <!-- Top 3 Filter -->
-        <rect x="40" y="125" width="180" height="30" fill="#bfdbfe" rx="4" stroke="#60a5fa" stroke-width="1"/>
-        <text x="130" y="144" font-size="12" font-weight="bold" fill="#1e40af" text-anchor="middle">精细筛选 (降维推荐)</text>
+        <rect x="40" y="120" width="180" height="30" fill="#bfdbfe" rx="4" stroke="#60a5fa" stroke-width="1"/>
+        <text x="130" y="140" font-size="12" font-weight="bold" fill="#1e40af" text-anchor="middle">精细筛选 (降维推荐)</text>
         
-        <path d="M 130 155 L 130 175" stroke="#3b82f6" stroke-width="3" fill="none" marker-end="url(#arrowhead-blue)"/>
+        <!-- Adjusted vertical arrow -->
+        <path d="M 130 155 L 130 170" stroke="#3b82f6" stroke-width="2" fill="none" marker-end="url(#arrowhead-blue)"/>
         
         <!-- 3 Candidates -->
-        <rect x="20" y="180" width="220" height="65" fill="#ffffff" rx="4" stroke="#93c5fd" stroke-width="1" stroke-dasharray="4,4"/>
-        <text x="130" y="198" font-size="12" font-weight="bold" fill="#0369a1" text-anchor="middle">输出：3 组精英候选 MV</text>
-        <text x="130" y="218" font-size="11" fill="#334155" text-anchor="middle">1. L0 最优 | 2. L1 最优 | 3. Bi-pred 提纯</text>
+        <rect x="20" y="175" width="220" height="65" fill="#ffffff" rx="4" stroke="#93c5fd" stroke-width="1" stroke-dasharray="4,4"/>
+        <text x="130" y="195" font-size="12" font-weight="bold" fill="#0369a1" text-anchor="middle">输出：3 组精英候选 MV</text>
+        <text x="130" y="215" font-size="11" fill="#334155" text-anchor="middle">1. L0 最优 | 2. L1 最优 | 3. Bi-pred 提纯</text>
     </g>
 
     <!-- Middle: Handshake -->
@@ -60,10 +62,9 @@
         <text x="90" y="50" font-size="11" fill="#64748b" text-anchor="middle">FIFO / 共享 SRAM 数据透传</text>
         <text x="90" y="68" font-size="10" fill="#64748b" text-anchor="middle">(严格单向传递)</text>
         
-        <!-- Arrows entering and leaving FIFO -->
-        <!-- Use larger custom arrow shapes for clarity between big blocks -->
-        <polygon points="-30,36 -8,36 -8,30 0,40 -8,50 -8,44 -30,44" fill="#64748b"/>
-        <polygon points="180,36 202,36 202,30 210,40 202,50 202,44 180,44" fill="#64748b"/>
+        <!-- Elegant thick block arrows pointing horizontally -->
+        <polygon points="-30,35 -10,35 -10,28 0,40 -10,52 -10,45 -30,45" fill="#64748b"/>
+        <polygon points="180,35 200,35 200,28 210,40 200,52 200,45 180,45" fill="#64748b"/>
     </g>
 
     <!-- Right Box: RDO -->
@@ -77,19 +78,19 @@
         <text x="145" y="65" font-size="12" font-weight="bold" fill="#065f46" text-anchor="middle">接收 3 组候选，启动最昂贵计算</text>
         <text x="145" y="85" font-size="11" fill="#475569" text-anchor="middle">代价计算: 真实 DCT -> Quant -> CABAC</text>
         
-        <path d="M 145 95 L 145 120" stroke="#10b981" stroke-width="3" fill="none" marker-end="url(#arrowhead-green)"/>
+        <path d="M 145 95 L 145 115" stroke="#10b981" stroke-width="2" fill="none" marker-end="url(#arrowhead-green)"/>
         
         <!-- Cost comparison -->
-        <rect x="40" y="125" width="210" height="45" fill="#a7f3d0" rx="4" stroke="#34d399" stroke-width="1"/>
-        <text x="145" y="142" font-size="12" font-weight="bold" fill="#047857" text-anchor="middle">真实 RD Cost = SSD + λ·Real_Bits</text>
-        <text x="145" y="160" font-size="11" fill="#064e3b" text-anchor="middle">对 3 个候选进行残酷比较</text>
+        <rect x="40" y="120" width="210" height="45" fill="#a7f3d0" rx="4" stroke="#34d399" stroke-width="1"/>
+        <text x="145" y="137" font-size="12" font-weight="bold" fill="#047857" text-anchor="middle">真实 RD Cost = SSD + λ·Real_Bits</text>
+        <text x="145" y="155" font-size="11" fill="#064e3b" text-anchor="middle">对 3 个候选进行残酷比较</text>
 
-        <path d="M 145 170 L 145 195" stroke="#10b981" stroke-width="3" fill="none" marker-end="url(#arrowhead-green)"/>
+        <path d="M 145 170 L 145 190" stroke="#10b981" stroke-width="2" fill="none" marker-end="url(#arrowhead-green)"/>
         
         <!-- Winner -->
-        <rect x="60" y="200" width="170" height="45" fill="#ffffff" rx="6" stroke="#059669" stroke-width="3"/>
-        <text x="145" y="220" font-size="13" font-weight="bold" fill="#16a34a" text-anchor="middle">🏆 最终 Best MV</text>
-        <text x="145" y="238" font-size="11" fill="#475569" text-anchor="middle">写入码流的唯一胜利者</text>
+        <rect x="60" y="195" width="170" height="45" fill="#ffffff" rx="6" stroke="#059669" stroke-width="3"/>
+        <text x="145" y="215" font-size="13" font-weight="bold" fill="#16a34a" text-anchor="middle">🏆 最终 Best MV</text>
+        <text x="145" y="233" font-size="11" fill="#475569" text-anchor="middle">写入码流的唯一胜利者</text>
     </g>
 
 </svg>
