@@ -57,6 +57,47 @@
         .algo-steps strong.title { color: #0288d1; display: block; margin-bottom: 10px; }
         .algo-steps ol { margin: 0; padding-left: 20px; }
         .algo-steps li { margin-bottom: 5px; }
+    
+        /* Animation CSS for MVP List Generation */
+        .mvp-animation-container { display: flex; gap: 40px; background: #fafafa; padding: 30px; border: 1px solid #eee; border-radius: 8px; justify-content: center; align-items: center; margin: 30px 0; }
+        .mvp-grid { display: grid; grid-template-columns: repeat(4, 50px); grid-template-rows: repeat(4, 50px); gap: 2px; background: #e2e8f0; padding: 2px; position: relative; }
+        .mvp-cell { background: #fff; display: flex; justify-content: center; align-items: center; font-size: 10px; color: #94a3b8; }
+        .mvp-cell.cur { background: #ffcdd2; border: 2px dashed #ef4444; color: #b91c1c; font-weight: bold; }
+        
+        .mvp-cell.a0, .mvp-cell.a1, .mvp-cell.b0, .mvp-cell.b1, .mvp-cell.b2 { position: relative; overflow: hidden; }
+        .mvp-cell.a0::after { content: ''; position: absolute; inset: 0; background: #4ade80; opacity: 0; animation: flashA0 10s infinite; }
+        .mvp-cell.a1::after { content: ''; position: absolute; inset: 0; background: #4ade80; opacity: 0; animation: flashA1 10s infinite; }
+        .mvp-cell.b0::after { content: ''; position: absolute; inset: 0; background: #4ade80; opacity: 0; animation: flashB0 10s infinite; }
+        .mvp-cell.b1::after { content: ''; position: absolute; inset: 0; background: #4ade80; opacity: 0; animation: flashB1 10s infinite; }
+        .mvp-cell.b2::after { content: ''; position: absolute; inset: 0; background: #4ade80; opacity: 0; animation: flashB2 10s infinite; }
+
+        @keyframes flashA0 { 0%, 5% {opacity: 0;} 10%, 100% {opacity: 0.6;} }
+        @keyframes flashA1 { 0%, 25% {opacity: 0;} 30%, 100% {opacity: 0.6;} }
+        @keyframes flashB0 { 0%, 45% {opacity: 0;} 50%, 100% {opacity: 0.6;} }
+        @keyframes flashB1 { 0%, 65% {opacity: 0;} 70%, 100% {opacity: 0.6;} }
+        @keyframes flashB2 { 0%, 85% {opacity: 0;} 90%, 100% {opacity: 0.6;} }
+
+        .mvp-list-box { width: 250px; background: white; border: 1px solid #cbd5e1; border-radius: 6px; padding: 15px; box-shadow: 0 4px 6px rgba(0,0,0,0.05); }
+        .mvp-list-title { font-weight: bold; color: #0f172a; margin-bottom: 10px; font-size: 14px; text-align: center; border-bottom: 1px solid #f1f5f9; padding-bottom: 5px; }
+        .mvp-item { padding: 8px; margin-bottom: 5px; border-radius: 4px; background: #f8fafc; border: 1px solid #e2e8f0; font-family: monospace; font-size: 12px; color: #334155; opacity: 0; transform: translateX(-10px); }
+        
+        .mvp-item:nth-child(2) { animation: slideInA0 10s infinite; }
+        .mvp-item:nth-child(3) { animation: slideInA1 10s infinite; }
+        .mvp-item:nth-child(4) { animation: slideInB0 10s infinite; }
+        .mvp-item:nth-child(5) { animation: slideInB1 10s infinite; }
+        .mvp-item:nth-child(6) { animation: slideInB2 10s infinite; }
+
+        @keyframes slideInA0 { 0%, 8% {opacity: 0; transform: translateX(-10px);} 12%, 100% {opacity: 1; transform: translateX(0); background: #dcfce7; border-color: #4ade80;} }
+        @keyframes slideInA1 { 0%, 28% {opacity: 0; transform: translateX(-10px);} 32%, 100% {opacity: 1; transform: translateX(0); background: #dcfce7; border-color: #4ade80;} }
+        @keyframes slideInB0 { 0%, 48% {opacity: 0; transform: translateX(-10px);} 52%, 100% {opacity: 1; transform: translateX(0); background: #dcfce7; border-color: #4ade80;} }
+        @keyframes slideInB1 { 0%, 68% {opacity: 0; transform: translateX(-10px);} 72%, 100% {opacity: 1; transform: translateX(0); background: #fef2f2; border-color: #fca5a5; text-decoration: line-through; color: #ef4444;} }
+        @keyframes slideInB2 { 0%, 88% {opacity: 0; transform: translateX(-10px);} 92%, 100% {opacity: 1; transform: translateX(0); background: #dcfce7; border-color: #4ade80;} }
+
+        /* Datapath Arrow CSS */
+        .data-arrow { display: flex; flex-direction: column; align-items: center; justify-content: center; width: 60px; }
+        .arrow-line { width: 100%; height: 4px; background: #3b82f6; position: relative; }
+        .arrow-line::after { content: ''; position: absolute; right: -5px; top: -6px; border-top: 8px solid transparent; border-bottom: 8px solid transparent; border-left: 10px solid #3b82f6; }
+    
     </style>
 </head>
 <body>
@@ -461,6 +502,48 @@
     </div>
     <div class="diagram-caption">图 4：空域 MVP 的五邻接取样位置与四级可用性校验流</div>
 
+    <div class="mvp-animation-container">
+        <div>
+            <div style="font-size: 13px; font-weight: bold; color: #475569; margin-bottom: 10px; text-align: center;">扫描取样坐标系 (空间邻接扫描)</div>
+            <div class="mvp-grid">
+                <!-- Row 0 -->
+                <div class="mvp-cell b2">B2</div>
+                <div class="mvp-cell b1">B1</div>
+                <div class="mvp-cell b0">B0</div>
+                <div class="mvp-cell"></div>
+                <!-- Row 1 -->
+                <div class="mvp-cell a1">A1</div>
+                <div class="mvp-cell cur" style="grid-column: span 2; grid-row: span 2;">当前 PU</div>
+                <div class="mvp-cell"></div>
+                <!-- Row 2 -->
+                <div class="mvp-cell"></div>
+                <div class="mvp-cell"></div>
+                <!-- Row 3 -->
+                <div class="mvp-cell a0">A0</div>
+                <div class="mvp-cell"></div>
+                <div class="mvp-cell"></div>
+                <div class="mvp-cell"></div>
+            </div>
+            <div style="text-align: center; margin-top: 10px; font-size: 12px; color: #64748b; font-style: italic;">*B1模拟 Intra 模式过滤失败</div>
+        </div>
+        
+        <div class="data-arrow">
+            <div style="font-size: 12px; color: #3b82f6; font-weight: bold; margin-bottom: 5px;">Push</div>
+            <div class="arrow-line"></div>
+        </div>
+
+        <div class="mvp-list-box">
+            <div class="mvp-list-title">实时 MVP 候选列表 (Buffer)</div>
+            <div class="mvp-item">idx 0: [MV_A0] (-12, 4) ✓</div>
+            <div class="mvp-item">idx 1: [MV_A1] (-8, 4) ✓</div>
+            <div class="mvp-item">idx 2: [MV_B0] (16, -2) ✓</div>
+            <div class="mvp-item">idx -: [MV_B1] (Intra 过滤) ✗</div>
+            <div class="mvp-item">idx 3: [MV_B2] (0, -4) ✓</div>
+        </div>
+    </div>
+    <div class="diagram-caption">图 4.1 动画：纯 CSS 渲染的 MVP 动态提取与列表填充扫描过程（支持无限放大）</div>
+    
+
     <div class="algo-steps">
         <strong class="title">📝 中文算法推导步骤 (空域 MVP 获取)</strong>
         <ol>
@@ -652,6 +735,59 @@
         代码中 <code>s_acMvRefineH[]</code> 和 <code>s_acMvRefineQ[]</code> 两张搜索偏移表的遍历顺序经过<strong>精心重排</strong>，严格匹配硬件的行扫描顺序 (左上→右下)。这确保了当两个候选位置的 RD Cost 完全相同时，C-Model 选出的位置与硬件选出的位置完全一致（<code>MEQN_SEARCH_REORDER_05</code> 宏控制）。
     </div>
 
+
+    <hr style="margin: 50px 0; border: 1px solid #e0e0e0;">
+
+    <h2>6. Inter 模块与 RDO 的核心数据握手 (Handshake Protocol)</h2>
+    <p>为了使得硬件流水线彻底解耦，ME/MC (Inter 预测模块) 跑完整个搜索和插值流程后，会将一组打包好的“核心结果负载”通过 FIFO 或共享 SRAM 传递给后端的 RDO 模块进行最终成本计算和决策。以下是传输链路的关键数据位图：</p>
+
+    <div class="highlight">
+        <strong>💡 架构约束：前向传递与反向禁止</strong><br>
+        硬件设计中，数据流是严格的单向传递（ME -> MC -> RDO）。RDO 计算完的比特或者真实的 SAD，绝不允许反向流回 ME 指导下一步动作，否则会形成致命的组合逻辑环路 (Combinational Loop)。
+    </div>
+
+    <table>
+      <thead>
+        <tr>
+          <th style="width: 25%;">信号类别 (Signal Group)</th>
+          <th style="width: 30%;">位宽估算 (Bit-width)</th>
+          <th>物理含义与 RDO 使用场景 (Physical Meaning & RDO Usage)</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr>
+          <td><strong>最优运动矢量 (Best MV)</strong></td>
+          <td>(16-bit X + 16-bit Y) × 2 (List0 & List1) = 64 bits</td>
+          <td>ME 精搜最终收敛得到的 1/4 像素级最优 MV。RDO 需要它来减去 AMVP predictor 从而计算精确的 <code>MVD Bits</code>。</td>
+        </tr>
+        <tr>
+          <td><strong>参考帧索引 (RefIdx)</strong></td>
+          <td>4-bit × 2 = 8 bits</td>
+          <td>最优 MV 指向的具体参考帧索引。RDO 计入比特开销，并结合最终模式输出给熵编码模块。</td>
+        </tr>
+        <tr>
+          <td><strong>预测方向 (InterDir)</strong></td>
+          <td>2 bits (L0, L1, Bi-pred)</td>
+          <td>表示是单向还是双向预测。决定 RDO 在处理比特率评估时的上下文 (Context) 模型选择。</td>
+        </tr>
+        <tr>
+          <td><strong>预测像素块 (Pred Pixels)</strong></td>
+          <td>对于 64x64: 4096 bytes (Luma) + 2048 bytes (Chroma)</td>
+          <td>MC 模块通过 8-Tap 亚像素插值滤波器生成的最终预测块。这是握手中<strong>最庞大</strong>的数据载荷。RDO 拿到后，会将其与原始像素做差生成残差，然后送入后续的 DCT 变换与量化 (T/Q) 硬件计算真实的失真 (SSD/SSE)。</td>
+        </tr>
+        <tr>
+          <td><strong>前端粗估代价 (ME Cost)</strong></td>
+          <td>32 bits</td>
+          <td>ME 阶段基于 SATD 算出的局部最优代价。虽然 RDO 最终会重新计算精准 Cost，但可以将此值作为<strong>提前终止门限 (Early Termination Threshold)</strong>。若 ME Cost 已经极大，RDO 可直接跳过对该 PU 的复杂计算以节省功耗。</td>
+        </tr>
+      </tbody>
+    </table>
+
+    <div class="success">
+        <strong>硬件数据流打包策略 (Data Packing Strategy)：</strong><br>
+        在芯片 RTL 设计中，前三项（MV, RefIdx, InterDir, ME Cost）属于**控制流信息**，总计仅百余 bits，会打包成一个 Header 在一个时钟周期内传递。而庞大的 **Pred Pixels** 属于**数据流信息**，通常通过 AXI / SRAM 突发写入 (Burst Write) 到 RDO 的专有缓存中。
+    </div>
+    
 </div>
 </div>
 
