@@ -749,13 +749,15 @@
         <!-- Section 2 -->
         <div style="background: #f8fafc; border: 1px solid #e2e8f0; border-radius: 8px; padding: 20px; margin-bottom: 25px;">
             <div style="font-size: 14px; font-weight: bold; color: #475569; letter-spacing: 1px; border-bottom: 1px dotted #cbd5e1; margin-bottom: 15px; padding-bottom: 10px;">
-                2. 多级特定精度账本 (fracMvCtx)
+                2. 多级特定精度账本 (贪心金字塔搜索原理)
             </div>
-            <ol style="padding-left: 20px; line-height: 1.8; margin: 0; color: #334155; font-size: 14px;">
-                <li><strong style="color: #0284c7;">精度分层维护：</strong> 精搜过程层层递进。算法底层专门维护了特定精度的缓存阵列 (<code>fracMvCtx</code>)，每一级精搜都会在对应的层级记录自己的历史账单。</li>
-                <li><strong style="color: #0284c7;">1/4 像素级直达：</strong> 当流水线处于 1/4 像素精搜，且需要提取预测子时，底层直奔邻居块的 1/4 像素级阵列缓存读取，丝毫不受后续逻辑干扰。</li>
-                <li><strong style="color: #0284c7;">1/2 像素级直达：</strong> 同理，半像素级精搜直接去半像素级阵列拿数据。这种“按需查账”避免了任何不必要的重复提取计算。</li>
-            </ol>
+            <p style="font-size: 13px; color: #334155; margin-top: 0; margin-bottom: 15px; line-height: 1.6;">
+                正如你所说，精搜本质就是一个<strong>贪心算法 (Greedy Algorithm) 构成的金字塔搜索</strong>：<br>
+                下一个更高精度的 MV，其“搜索网格的中心起点”完全依赖于上一个精度的最优搜索结果。正是因为这种层层递进的强制空间依赖，C-Model 才必须在底层维护 <code>fracMvCtx</code> 缓存。
+            </p>
+            <div style="text-align: center; margin-top: 10px;">
+                <img src="../assets/pyramid_search.svg" alt="金字塔贪心搜索原理" style="max-width: 100%; height: auto; box-shadow: 0 4px 6px rgba(0,0,0,0.05); border-radius: 8px;">
+            </div>
         </div>
 
         <!-- Section 3 -->
