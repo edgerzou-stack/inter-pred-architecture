@@ -902,6 +902,47 @@
         <strong>硬件数据流打包策略 (Data Packing Strategy)：</strong><br>
         在芯片 RTL 设计中，前三项（MV, RefIdx, InterDir, ME Cost）属于**控制流信息**，总计仅百余 bits，会打包成一个 Header 在一个时钟周期内传递。而庞大的 **Pred Pixels** 属于**数据流信息**，通常通过 AXI / SRAM 突发写入 (Burst Write) 到 RDO 的专有缓存中。
     </div>
+
+    <hr style="margin: 50px 0; border: 1px solid #e0e0e0;">
+
+    <h2>7. 架构边界情况：CU64 模式下 Inter 与 Intra 的底层实现差异</h2>
+    <p>在咱们的 C-Model 中，考虑到最大 Transform Unit (TU) 尺寸仅支持到 32x32 以及庞大的计算面积开销，底层引擎在处理 64x64 超大块时，无论是 Inter 还是 Intra 都<strong>没有</strong>进行真实的 64 级别搜索，而是采用了两种截然不同的降维手段：</p>
+
+    <div style="display: flex; gap: 20px; margin-top: 20px; margin-bottom: 30px;">
+        <!-- Inter Box -->
+        <div style="flex: 1; background: #f8fafc; border: 1px solid #e2e8f0; border-radius: 8px; padding: 20px;">
+            <h4 style="color: #0369a1; border-bottom: 1px solid #bae6fd; padding-bottom: 10px; margin-top: 0;">🌐 Inter 模式：自下而上的“平均推导”机制</h4>
+            <p style="font-size: 14px; color: #334155; line-height: 1.6;">
+                Inter 引擎在架构上<strong>保留</strong>了 CU64 甚至 MTT（如 BT/TT）的概念，但通过<strong>子块均值融合</strong>来规避庞大的搜索开销：
+            </p>
+            <ul style="font-size: 13.5px; color: #475569; padding-left: 20px; line-height: 1.6;">
+                <li><strong>CU64x64：</strong> 其 MV 直接由底层的 4 个 32x32 MV 求平均得到 (<code>average of 4 CU32x32 mvs</code>)。</li>
+                <li><strong>CU64_BT (如 64x32)：</strong> 由覆盖的 2 个 32x32 MV 求平均得到。</li>
+                <li><strong>CU64_TT 中间大块：</strong> 由覆盖的 4 个 32x32 MV 求平均得到。</li>
+            </ul>
+            <div style="background: #eff6ff; padding: 10px; border-left: 4px solid #3b82f6; font-size: 12.5px; color: #1e40af; margin-top: 15px;">
+                <strong>💡 C-Model 理论依据：</strong><br>
+                如果一个 64x64 不该被划分，那它底下的 32x32 必定有着极其相似的 MV，直接平均是性价比最高的降维方案。
+            </div>
+        </div>
+
+        <!-- Intra Box -->
+        <div style="flex: 1; background: #fff1f2; border: 1px solid #ffe4e6; border-radius: 8px; padding: 20px;">
+            <h4 style="color: #be123c; border-bottom: 1px solid #fecdd3; padding-bottom: 10px; margin-top: 0;">🧱 Intra 模式：硬性降维碎化拆解</h4>
+            <p style="font-size: 14px; color: #334155; line-height: 1.6;">
+                Intra 引擎受限于邻近像素过远和 TU32 越界等问题，在架构上<strong>彻底拒绝</strong>了 CU64 的整体处理：
+            </p>
+            <ul style="font-size: 13.5px; color: #475569; padding-left: 20px; line-height: 1.6;">
+                <li><strong>编译期封杀：</strong> 源码 <code>intra_mode.h</code> 直接写死宏开关 <code>#define NO_CU_64x64 1</code>。</li>
+                <li><strong>强制四分法：</strong> 在 C-Model 中，一个 64x64 的预测块被无条件视作四个 32x32 进行独立处理。</li>
+                <li><strong>Cost 物理叠加：</strong> CU64 的最终代价，等于底层四个独立的 32x32 代价的纯物理相加，它仅仅是一个逻辑上的壳子。</li>
+            </ul>
+            <div style="background: #fff1f2; padding: 10px; border-left: 4px solid #e11d48; font-size: 12.5px; color: #9f1239; margin-top: 15px;">
+                <strong>💡 架构启示：</strong><br>
+                相比于 Inter 的“拼图伪装”，Intra 则是从代码级就抹杀了 64x64 的物理意义，强制回退至 32x32 并发。
+            </div>
+        </div>
+    </div>
     
 </div>
 </div>
