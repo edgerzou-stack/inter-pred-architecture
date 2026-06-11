@@ -76,7 +76,136 @@
     <p>VideoEncoder_Project 包含对多种标准（HEVC, AV1, H264）的 Inter Prediction（帧间预测）实现。本文档以 HEVC 帧间预测 (<code>hevc/inter_mode.c</code>) 作为基础模型，分析其运动估计（Motion Estimation, ME）与运动补偿（Motion Compensation, MC）的核心架构设计。</p>
 
     <div style="text-align: center; margin: 30px 0; background: #fafafa; padding: 20px; border: 1px solid #eee; border-radius: 8px;">
-        <img src="../assets/fig1.svg" alt="帧间预测完整数据流" style="max-width: 100%; height: auto;">
+        <svg width="100%" height="auto"
+ viewBox="0.00 0.00 1641.50 167.00" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink">
+<g id="graph0" class="graph" transform="scale(1 1) rotate(0) translate(4 163)">
+<polygon fill="white" stroke="none" points="-4,4 -4,-163 1637.5,-163 1637.5,4 -4,4"/>
+<g id="clust1" class="cluster">
+<title>cluster_InputStage</title>
+<polygon fill="none" stroke="#999999" stroke-dasharray="5,2" points="8,-8 8,-151 163,-151 163,-8 8,-8"/>
+<text text-anchor="middle" x="85.5" y="-128" font-family="Helvetica, Arial, sans-serif" font-size="20.00">前端输入</text>
+</g>
+<g id="clust2" class="cluster">
+<title>cluster_ME</title>
+<path fill="#ffffe0" stroke="#fbc02d" d="M196,-38C196,-38 787.75,-38 787.75,-38 793.75,-38 799.75,-44 799.75,-50 799.75,-50 799.75,-115 799.75,-115 799.75,-121 793.75,-127 787.75,-127 787.75,-127 196,-127 196,-127 190,-127 184,-121 184,-115 184,-115 184,-50 184,-50 184,-44 190,-38 196,-38"/>
+<text text-anchor="middle" x="491.88" y="-104" font-family="Helvetica, Arial, sans-serif" font-size="20.00">运动估计 (ME)</text>
+</g>
+<g id="clust3" class="cluster">
+<title>cluster_MC</title>
+<path fill="#e0f7fa" stroke="#00acc1" d="M892.5,-38C892.5,-38 1187.5,-38 1187.5,-38 1193.5,-38 1199.5,-44 1199.5,-50 1199.5,-50 1199.5,-115 1199.5,-115 1199.5,-121 1193.5,-127 1187.5,-127 1187.5,-127 892.5,-127 892.5,-127 886.5,-127 880.5,-121 880.5,-115 880.5,-115 880.5,-50 880.5,-50 880.5,-44 886.5,-38 892.5,-38"/>
+<text text-anchor="middle" x="1040" y="-104" font-family="Helvetica, Arial, sans-serif" font-size="20.00">运动补偿 (MC)</text>
+</g>
+<g id="clust4" class="cluster">
+<title>cluster_RDO</title>
+<path fill="#fce4ec" stroke="#c2185b" d="M1313.25,-38C1313.25,-38 1613.5,-38 1613.5,-38 1619.5,-38 1625.5,-44 1625.5,-50 1625.5,-50 1625.5,-115 1625.5,-115 1625.5,-121 1619.5,-127 1613.5,-127 1613.5,-127 1313.25,-127 1313.25,-127 1307.25,-127 1301.25,-121 1301.25,-115 1301.25,-115 1301.25,-50 1301.25,-50 1301.25,-44 1307.25,-38 1313.25,-38"/>
+<text text-anchor="middle" x="1463.38" y="-104" font-family="Helvetica, Arial, sans-serif" font-size="20.00">率失真优化 (RDO)</text>
+</g>
+<!-- OrigPix -->
+<g id="node1" class="node">
+<title>OrigPix</title>
+<polygon fill="#f3e5f5" stroke="black" points="155,-106 16,-106 16,-70 155,-70 155,-106"/>
+<text text-anchor="middle" x="85.5" y="-84.03" font-family="Helvetica, Arial, sans-serif" font-size="18.00">原始像素 (Orig)</text>
+</g>
+<!-- MVP -->
+<g id="node3" class="node">
+<title>MVP</title>
+<polygon fill="#ffffff" stroke="black" points="370.75,-82 192,-82 192,-46 370.75,-46 370.75,-82"/>
+<text text-anchor="middle" x="281.38" y="-60.02" font-family="Helvetica, Arial, sans-serif" font-size="18.00">空域/时域 MVP 获取</text>
+</g>
+<!-- OrigPix&#45;&gt;MVP -->
+<g id="edge5" class="edge">
+<title>OrigPix&#45;&gt;MVP</title>
+<path fill="none" stroke="black" stroke-dasharray="5,2" d="M155.4,-79.47C163.57,-78.46 172.04,-77.41 180.53,-76.36"/>
+<polygon fill="black" stroke="black" points="180.69,-79.87 190.19,-75.16 179.83,-72.92 180.69,-79.87"/>
+</g>
+<!-- RefPix -->
+<g id="node2" class="node">
+<title>RefPix</title>
+<polygon fill="#f3e5f5" stroke="black" points="143,-52 28,-52 28,-16 143,-16 143,-52"/>
+<text text-anchor="middle" x="85.5" y="-30.02" font-family="Helvetica, Arial, sans-serif" font-size="18.00">参考帧 (Ref)</text>
+</g>
+<!-- RefPix&#45;&gt;MVP -->
+<g id="edge6" class="edge">
+<title>RefPix&#45;&gt;MVP</title>
+<path fill="none" stroke="black" stroke-dasharray="5,2" d="M143.36,-42.8C155.11,-44.62 167.82,-46.58 180.59,-48.56"/>
+<polygon fill="black" stroke="black" points="179.9,-51.99 190.31,-50.06 180.97,-45.08 179.9,-51.99"/>
+</g>
+<!-- Coarse -->
+<g id="node4" class="node">
+<title>Coarse</title>
+<polygon fill="#ffffff" stroke="black" points="602.25,-82 407.75,-82 407.75,-46 602.25,-46 602.25,-82"/>
+<text text-anchor="middle" x="505" y="-60.02" font-family="Helvetica, Arial, sans-serif" font-size="18.00">多级粗搜 (Coarse ME)</text>
+</g>
+<!-- MVP&#45;&gt;Coarse -->
+<g id="edge1" class="edge">
+<title>MVP&#45;&gt;Coarse</title>
+<path fill="none" stroke="black" d="M371.24,-64C379.44,-64 387.8,-64 396.14,-64"/>
+<polygon fill="black" stroke="black" points="395.97,-67.5 405.97,-64 395.97,-60.5 395.97,-67.5"/>
+</g>
+<!-- Refine -->
+<g id="node5" class="node">
+<title>Refine</title>
+<polygon fill="#ffffff" stroke="black" points="791.75,-82 639.25,-82 639.25,-46 791.75,-46 791.75,-82"/>
+<text text-anchor="middle" x="715.5" y="-60.02" font-family="Helvetica, Arial, sans-serif" font-size="18.00">精搜 (Refine ME)</text>
+</g>
+<!-- Coarse&#45;&gt;Refine -->
+<g id="edge2" class="edge">
+<title>Coarse&#45;&gt;Refine</title>
+<path fill="none" stroke="black" d="M602.62,-64C610.87,-64 619.19,-64 627.37,-64"/>
+<polygon fill="black" stroke="black" points="627.29,-67.5 637.29,-64 627.29,-60.5 627.29,-67.5"/>
+</g>
+<!-- Interp -->
+<g id="node6" class="node">
+<title>Interp</title>
+<polygon fill="#ffffff" stroke="black" points="1030.5,-82 888.5,-82 888.5,-46 1030.5,-46 1030.5,-82"/>
+<text text-anchor="middle" x="959.5" y="-60.02" font-family="Helvetica, Arial, sans-serif" font-size="18.00">亚像素插值滤波</text>
+</g>
+<!-- Refine&#45;&gt;Interp -->
+<g id="edge7" class="edge">
+<title>Refine&#45;&gt;Interp</title>
+<path fill="none" stroke="black" stroke-dasharray="5,2" d="M799.75,-64C824.58,-64 851.77,-64 876.52,-64"/>
+<polygon fill="black" stroke="black" points="868.99,-67.5 878.99,-64 868.99,-60.5 868.99,-67.5"/>
+<text text-anchor="middle" x="840.12" y="-65.3" font-family="Helvetica, Arial, sans-serif" font-size="16.00" fill="#0288d1">Best MV</text>
+</g>
+<!-- ReconGen -->
+<g id="node7" class="node">
+<title>ReconGen</title>
+<polygon fill="#ffffff" stroke="black" points="1191.5,-82 1067.5,-82 1067.5,-46 1191.5,-46 1191.5,-82"/>
+<text text-anchor="middle" x="1129.5" y="-60.02" font-family="Helvetica, Arial, sans-serif" font-size="18.00">重构像素生成</text>
+</g>
+<!-- Interp&#45;&gt;ReconGen -->
+<g id="edge3" class="edge">
+<title>Interp&#45;&gt;ReconGen</title>
+<path fill="none" stroke="black" d="M1030.77,-64C1038.96,-64 1047.33,-64 1055.56,-64"/>
+<polygon fill="black" stroke="black" points="1055.54,-67.5 1065.54,-64 1055.54,-60.5 1055.54,-67.5"/>
+</g>
+<!-- MergeSkip -->
+<g id="node8" class="node">
+<title>MergeSkip</title>
+<polygon fill="#ffffff" stroke="black" points="1456.5,-82 1309.25,-82 1309.25,-46 1456.5,-46 1456.5,-82"/>
+<text text-anchor="middle" x="1382.88" y="-60.02" font-family="Helvetica, Arial, sans-serif" font-size="18.00">Merge/Skip 决策</text>
+</g>
+<!-- ReconGen&#45;&gt;MergeSkip -->
+<g id="edge8" class="edge">
+<title>ReconGen&#45;&gt;MergeSkip</title>
+<path fill="none" stroke="black" stroke-dasharray="5,2" d="M1199.5,-64C1229.77,-64 1265.6,-64 1297.45,-64"/>
+<polygon fill="black" stroke="black" points="1289.74,-67.5 1299.74,-64 1289.74,-60.5 1289.74,-67.5"/>
+<text text-anchor="middle" x="1250.38" y="-65.3" font-family="Helvetica, Arial, sans-serif" font-size="16.00" fill="#0288d1">Pred Pixels</text>
+</g>
+<!-- ModeSel -->
+<g id="node9" class="node">
+<title>ModeSel</title>
+<polygon fill="#ffffff" stroke="black" points="1617.5,-82 1493.5,-82 1493.5,-46 1617.5,-46 1617.5,-82"/>
+<text text-anchor="middle" x="1555.5" y="-60.02" font-family="Helvetica, Arial, sans-serif" font-size="18.00">最终模式选择</text>
+</g>
+<!-- MergeSkip&#45;&gt;ModeSel -->
+<g id="edge4" class="edge">
+<title>MergeSkip&#45;&gt;ModeSel</title>
+<path fill="none" stroke="black" d="M1456.73,-64C1465.07,-64 1473.58,-64 1481.92,-64"/>
+<polygon fill="black" stroke="black" points="1481.65,-67.5 1491.65,-64 1481.65,-60.5 1481.65,-67.5"/>
+</g>
+</g>
+</svg>
     </div>
     <div class="diagram-caption">图 1：帧间预测完整数据流——从输入到最终模式选择的全链路架构</div>
 
@@ -173,7 +302,162 @@
     <p>在 <code>xGetNeighborAvailable</code> 函数中，对当前预测单元 (PU) 的周边块 (A0, A1, B0, B1, B2 等) 进行可用性判定和 MV 提取。</p>
 
     <div style="text-align: center; margin: 30px 0; background: #fafafa; padding: 20px; border: 1px solid #eee; border-radius: 8px;">
-        <img src="../assets/fig4.svg" alt="空域 MVP 的五邻接取样位置" style="max-width: 100%; height: auto;">
+        <svg width="100%" height="auto"
+ viewBox="0.00 0.00 1348.00 221.00" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink">
+<g id="graph0" class="graph" transform="scale(1 1) rotate(0) translate(4 217)">
+<polygon fill="white" stroke="none" points="-4,4 -4,-217 1344,-217 1344,4 -4,4"/>
+<g id="clust1" class="cluster">
+<title>cluster_Spatial</title>
+<path fill="#f3e5f5" stroke="#ab47bc" d="M20,-8C20,-8 359,-8 359,-8 365,-8 371,-14 371,-20 371,-20 371,-193 371,-193 371,-199 365,-205 359,-205 359,-205 20,-205 20,-205 14,-205 8,-199 8,-193 8,-193 8,-20 8,-20 8,-14 14,-8 20,-8"/>
+<text text-anchor="middle" x="189.5" y="-182" font-family="Helvetica, Arial, sans-serif" font-size="20.00">空域 MVP 取样位置</text>
+</g>
+<g id="clust2" class="cluster">
+<title>cluster_Check</title>
+<path fill="#e1f5fe" stroke="#0288d1" d="M466,-71C466,-71 1107.75,-71 1107.75,-71 1113.75,-71 1119.75,-77 1119.75,-83 1119.75,-83 1119.75,-148 1119.75,-148 1119.75,-154 1113.75,-160 1107.75,-160 1107.75,-160 466,-160 466,-160 460,-160 454,-154 454,-148 454,-148 454,-83 454,-83 454,-77 460,-71 466,-71"/>
+<text text-anchor="middle" x="786.88" y="-137" font-family="Helvetica, Arial, sans-serif" font-size="20.00">可用性校验</text>
+</g>
+<!-- B2 -->
+<g id="node1" class="node">
+<title>B2</title>
+<polygon fill="#ffffff" stroke="black" points="107,-99 16,-99 16,-63 107,-63 107,-99"/>
+<text text-anchor="middle" x="61.5" y="-77.03" font-family="Helvetica, Arial, sans-serif" font-size="18.00">B2 (左上)</text>
+</g>
+<!-- B1 -->
+<g id="node2" class="node">
+<title>B1</title>
+<polygon fill="#ffffff" stroke="black" points="235,-126 144,-126 144,-90 235,-90 235,-126"/>
+<text text-anchor="middle" x="189.5" y="-104.03" font-family="Helvetica, Arial, sans-serif" font-size="18.00">B1 (正上)</text>
+</g>
+<!-- B2&#45;&gt;B1 -->
+<g id="edge1" class="edge">
+<title>B2&#45;&gt;B1</title>
+<path fill="none" stroke="black" d="M107.28,-90.6C115.54,-92.37 124.26,-94.23 132.8,-96.06"/>
+<polygon fill="black" stroke="black" points="131.88,-99.45 142.39,-98.12 133.34,-92.6 131.88,-99.45"/>
+</g>
+<!-- A1 -->
+<g id="node4" class="node">
+<title>A1</title>
+<polygon fill="#ffffff" stroke="black" points="235,-72 144,-72 144,-36 235,-36 235,-72"/>
+<text text-anchor="middle" x="189.5" y="-50.02" font-family="Helvetica, Arial, sans-serif" font-size="18.00">A1 (正左)</text>
+</g>
+<!-- B2&#45;&gt;A1 -->
+<g id="edge3" class="edge">
+<title>B2&#45;&gt;A1</title>
+<path fill="none" stroke="black" d="M107.28,-71.4C115.54,-69.63 124.26,-67.77 132.8,-65.94"/>
+<polygon fill="black" stroke="black" points="133.34,-69.4 142.39,-63.88 131.88,-62.55 133.34,-69.4"/>
+</g>
+<!-- B0 -->
+<g id="node3" class="node">
+<title>B0</title>
+<polygon fill="#ffffff" stroke="black" points="363,-160 272,-160 272,-124 363,-124 363,-160"/>
+<text text-anchor="middle" x="317.5" y="-138.03" font-family="Helvetica, Arial, sans-serif" font-size="18.00">B0 (右上)</text>
+</g>
+<!-- B1&#45;&gt;B0 -->
+<g id="edge2" class="edge">
+<title>B1&#45;&gt;B0</title>
+<path fill="none" stroke="black" d="M235.28,-120.08C243.54,-122.31 252.26,-124.67 260.8,-126.97"/>
+<polygon fill="black" stroke="black" points="259.84,-130.34 270.41,-129.56 261.66,-123.58 259.84,-130.34"/>
+</g>
+<!-- CUR -->
+<g id="node6" class="node">
+<title>CUR</title>
+<polygon fill="#ffcdd2" stroke="#d32f2f" stroke-width="2" stroke-dasharray="5,2" points="358.88,-106 276.12,-106 276.12,-70 358.88,-70 358.88,-106"/>
+<text text-anchor="middle" x="317.5" y="-84.03" font-family="Helvetica, Arial, sans-serif" font-size="18.00">当前 PU</text>
+</g>
+<!-- B1&#45;&gt;CUR -->
+<g id="edge6" class="edge">
+<title>B1&#45;&gt;CUR</title>
+<path fill="none" stroke="black" d="M235.28,-100.89C244.63,-99.41 254.57,-97.83 264.17,-96.31"/>
+<polygon fill="black" stroke="black" points="264.41,-99.81 273.74,-94.79 263.31,-92.9 264.41,-99.81"/>
+</g>
+<!-- C1 -->
+<g id="node7" class="node">
+<title>C1</title>
+<polygon fill="#ffffff" stroke="black" points="595,-115 462,-115 462,-79 595,-79 595,-115"/>
+<text text-anchor="middle" x="528.5" y="-93.03" font-family="Helvetica, Arial, sans-serif" font-size="18.00">Z&#45;Scan 可用性</text>
+</g>
+<!-- B0&#45;&gt;C1 -->
+<g id="edge11" class="edge">
+<title>B0&#45;&gt;C1</title>
+<path fill="none" stroke="black" stroke-dasharray="5,2" d="M371,-130.7C395.09,-125.51 424.13,-119.26 450.62,-113.55"/>
+<polygon fill="black" stroke="black" points="444.68,-119.78 452.6,-112.74 442.02,-113.3 444.68,-119.78"/>
+</g>
+<!-- A0 -->
+<g id="node5" class="node">
+<title>A0</title>
+<polygon fill="#ffffff" stroke="black" points="363,-52 272,-52 272,-16 363,-16 363,-52"/>
+<text text-anchor="middle" x="317.5" y="-30.02" font-family="Helvetica, Arial, sans-serif" font-size="18.00">A0 (左下)</text>
+</g>
+<!-- A1&#45;&gt;A0 -->
+<g id="edge4" class="edge">
+<title>A1&#45;&gt;A0</title>
+<path fill="none" stroke="black" d="M235.28,-46.89C243.45,-45.6 252.06,-44.23 260.51,-42.89"/>
+<polygon fill="black" stroke="black" points="261.04,-46.35 270.37,-41.32 259.95,-39.43 261.04,-46.35"/>
+</g>
+<!-- A1&#45;&gt;CUR -->
+<g id="edge5" class="edge">
+<title>A1&#45;&gt;CUR</title>
+<path fill="none" stroke="black" d="M235.28,-66.08C244.63,-68.61 254.57,-71.29 264.17,-73.88"/>
+<polygon fill="black" stroke="black" points="263.2,-77.24 273.77,-76.47 265.03,-70.49 263.2,-77.24"/>
+</g>
+<!-- A0&#45;&gt;C1 -->
+<g id="edge10" class="edge">
+<title>A0&#45;&gt;C1</title>
+<path fill="none" stroke="black" stroke-dasharray="5,2" d="M371,-49.82C392.87,-56.42 418.82,-64.24 443.24,-71.6"/>
+<polygon fill="black" stroke="black" points="441.97,-74.87 452.55,-74.41 443.99,-68.17 441.97,-74.87"/>
+<text text-anchor="middle" x="412.5" y="-79.19" font-family="Helvetica, Arial, sans-serif" font-size="16.00">候选位置</text>
+</g>
+<!-- C2 -->
+<g id="node8" class="node">
+<title>C2</title>
+<polygon fill="#ffffff" stroke="black" points="761.25,-115 632,-115 632,-79 761.25,-79 761.25,-115"/>
+<text text-anchor="middle" x="696.62" y="-93.03" font-family="Helvetica, Arial, sans-serif" font-size="18.00">MTT 分区兼容</text>
+</g>
+<!-- C1&#45;&gt;C2 -->
+<g id="edge7" class="edge">
+<title>C1&#45;&gt;C2</title>
+<path fill="none" stroke="black" d="M595.16,-97C603.39,-97 611.86,-97 620.22,-97"/>
+<polygon fill="black" stroke="black" points="620.02,-100.5 630.02,-97 620.02,-93.5 620.02,-100.5"/>
+</g>
+<!-- C3 -->
+<g id="node9" class="node">
+<title>C3</title>
+<polygon fill="#ffffff" stroke="black" points="941.75,-115 798.25,-115 798.25,-79 941.75,-79 941.75,-115"/>
+<text text-anchor="middle" x="870" y="-93.03" font-family="Helvetica, Arial, sans-serif" font-size="18.00">Merge 并行级别</text>
+</g>
+<!-- C2&#45;&gt;C3 -->
+<g id="edge8" class="edge">
+<title>C2&#45;&gt;C3</title>
+<path fill="none" stroke="black" d="M761.44,-97C769.62,-97 778.08,-97 786.5,-97"/>
+<polygon fill="black" stroke="black" points="786.42,-100.5 796.42,-97 786.42,-93.5 786.42,-100.5"/>
+</g>
+<!-- C4 -->
+<g id="node10" class="node">
+<title>C4</title>
+<polygon fill="#ffffff" stroke="black" points="1111.75,-115 978.75,-115 978.75,-79 1111.75,-79 1111.75,-115"/>
+<text text-anchor="middle" x="1045.25" y="-93.03" font-family="Helvetica, Arial, sans-serif" font-size="18.00">Intra/Skip 过滤</text>
+</g>
+<!-- C3&#45;&gt;C4 -->
+<g id="edge9" class="edge">
+<title>C3&#45;&gt;C4</title>
+<path fill="none" stroke="black" d="M942.22,-97C950.34,-97 958.64,-97 966.84,-97"/>
+<polygon fill="black" stroke="black" points="966.81,-100.5 976.81,-97 966.81,-93.5 966.81,-100.5"/>
+</g>
+<!-- Output -->
+<g id="node11" class="node">
+<title>Output</title>
+<polygon fill="#e8f5e9" stroke="#2e7d32" points="1340,-115 1208.5,-115 1208.5,-79 1340,-79 1340,-115"/>
+<text text-anchor="middle" x="1274.25" y="-93.03" font-family="Helvetica, Arial, sans-serif" font-size="18.00">MVP 候选列表</text>
+</g>
+<!-- C4&#45;&gt;Output -->
+<g id="edge12" class="edge">
+<title>C4&#45;&gt;Output</title>
+<path fill="none" stroke="black" stroke-dasharray="5,2" d="M1119.75,-97C1144.51,-97 1172.18,-97 1197.13,-97"/>
+<polygon fill="black" stroke="black" points="1196.79,-100.5 1206.79,-97 1196.79,-93.5 1196.79,-100.5"/>
+<text text-anchor="middle" x="1160.12" y="-105.05" font-family="Helvetica, Arial, sans-serif" font-size="16.00">有效 MV</text>
+</g>
+</g>
+</svg>
     </div>
     <div class="diagram-caption">图 4：空域 MVP 的五邻接取样位置与四级可用性校验流</div>
 
@@ -199,7 +483,85 @@
     </div>
 
     <div style="text-align: center; margin: 30px 0; background: #fafafa; padding: 20px; border: 1px solid #eee; border-radius: 8px;">
-        <img src="../assets/fig5.svg" alt="TMVP 时域 MV 提取与 POC 缩放" style="max-width: 100%; height: auto;">
+        <svg width="100%" height="auto"
+ viewBox="0.00 0.00 1414.25 113.00" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink">
+<g id="graph0" class="graph" transform="scale(1 1) rotate(0) translate(4 109)">
+<polygon fill="white" stroke="none" points="-4,4 -4,-109 1410.25,-109 1410.25,4 -4,4"/>
+<g id="clust1" class="cluster">
+<title>cluster_ColProcess</title>
+<path fill="#fff3e0" stroke="#f57c00" d="M408.25,-8C408.25,-8 1150.75,-8 1150.75,-8 1156.75,-8 1162.75,-14 1162.75,-20 1162.75,-20 1162.75,-85 1162.75,-85 1162.75,-91 1156.75,-97 1150.75,-97 1150.75,-97 408.25,-97 408.25,-97 402.25,-97 396.25,-91 396.25,-85 396.25,-85 396.25,-20 396.25,-20 396.25,-14 402.25,-8 408.25,-8"/>
+<text text-anchor="middle" x="779.5" y="-74" font-family="Helvetica, Arial, sans-serif" font-size="20.00">时域 MV 提取流</text>
+</g>
+<!-- CurFrame -->
+<g id="node1" class="node">
+<title>CurFrame</title>
+<polygon fill="#ffffff" stroke="black" points="115.75,-52 0,-52 0,-16 115.75,-16 115.75,-52"/>
+<text text-anchor="middle" x="57.88" y="-30.02" font-family="Helvetica, Arial, sans-serif" font-size="18.00">当前帧 (Cur)</text>
+</g>
+<!-- ColFrame -->
+<g id="node2" class="node">
+<title>ColFrame</title>
+<polygon fill="#f5f5f5" stroke="#999999" points="367.25,-52 253.75,-52 253.75,-16 367.25,-16 367.25,-52"/>
+<text text-anchor="middle" x="310.5" y="-30.02" font-family="Helvetica, Arial, sans-serif" font-size="18.00">参考帧 (Col)</text>
+</g>
+<!-- CurFrame&#45;&gt;ColFrame -->
+<g id="edge3" class="edge">
+<title>CurFrame&#45;&gt;ColFrame</title>
+<path fill="none" stroke="black" stroke-dasharray="5,2" d="M116.06,-34C153.53,-34 202.69,-34 242.07,-34"/>
+<polygon fill="black" stroke="black" points="241.91,-37.5 251.91,-34 241.91,-30.5 241.91,-37.5"/>
+<text text-anchor="middle" x="184.75" y="-35.3" font-family="Helvetica, Arial, sans-serif" font-size="16.00">POC Distance</text>
+</g>
+<!-- ColCU -->
+<g id="node4" class="node">
+<title>ColCU</title>
+<polygon fill="#ffffff" stroke="black" points="571.75,-52 404.25,-52 404.25,-16 571.75,-16 571.75,-52"/>
+<text text-anchor="middle" x="488" y="-30.02" font-family="Helvetica, Arial, sans-serif" font-size="18.00">Colocated CU 定位</text>
+</g>
+<!-- ColFrame&#45;&gt;ColCU -->
+<g id="edge4" class="edge">
+<title>ColFrame&#45;&gt;ColCU</title>
+<path fill="none" stroke="black" d="M367.51,-34C375.6,-34 384.11,-34 392.7,-34"/>
+<polygon fill="black" stroke="black" points="384.74,-37.5 394.74,-34 384.74,-30.5 384.74,-37.5"/>
+</g>
+<!-- MVP -->
+<g id="node3" class="node">
+<title>MVP</title>
+<polygon fill="#e8f5e9" stroke="#2e7d32" points="1406.25,-52 1268.75,-52 1268.75,-16 1406.25,-16 1406.25,-52"/>
+<text text-anchor="middle" x="1337.5" y="-30.02" font-family="Helvetica, Arial, sans-serif" font-size="18.00">加入 MVP 列表</text>
+</g>
+<!-- RefList -->
+<g id="node5" class="node">
+<title>RefList</title>
+<polygon fill="#ffffff" stroke="black" points="882,-52 608.75,-52 608.75,-16 882,-16 882,-52"/>
+<text text-anchor="middle" x="745.38" y="-30.02" font-family="Helvetica, Arial, sans-serif" font-size="18.00">参考列表选择 (bColFromL0Flag)</text>
+</g>
+<!-- ColCU&#45;&gt;RefList -->
+<g id="edge1" class="edge">
+<title>ColCU&#45;&gt;RefList</title>
+<path fill="none" stroke="black" d="M571.91,-34C580.12,-34 588.6,-34 597.21,-34"/>
+<polygon fill="black" stroke="black" points="597.06,-37.5 607.06,-34 597.06,-30.5 597.06,-37.5"/>
+</g>
+<!-- ScaleMV -->
+<g id="node6" class="node">
+<title>ScaleMV</title>
+<polygon fill="#e1f5fe" stroke="#0288d1" points="1154.75,-52 919,-52 919,-16 1154.75,-16 1154.75,-52"/>
+<text text-anchor="middle" x="1036.88" y="-30.02" font-family="Helvetica, Arial, sans-serif" font-size="18.00">MV 缩放 (tmvpScaleFactor)</text>
+</g>
+<!-- RefList&#45;&gt;ScaleMV -->
+<g id="edge2" class="edge">
+<title>RefList&#45;&gt;ScaleMV</title>
+<path fill="none" stroke="black" d="M882.22,-34C890.61,-34 899.03,-34 907.38,-34"/>
+<polygon fill="black" stroke="black" points="907.2,-37.5 917.2,-34 907.2,-30.5 907.2,-37.5"/>
+</g>
+<!-- ScaleMV&#45;&gt;MVP -->
+<g id="edge5" class="edge">
+<title>ScaleMV&#45;&gt;MVP</title>
+<path fill="none" stroke="black" stroke-dasharray="5,2" d="M1162.75,-34C1194.68,-34 1228.14,-34 1257.08,-34"/>
+<polygon fill="black" stroke="black" points="1256.84,-37.5 1266.84,-34 1256.84,-30.5 1256.84,-37.5"/>
+<text text-anchor="middle" x="1211.75" y="-35.3" font-family="Helvetica, Arial, sans-serif" font-size="16.00">Scaled MV</text>
+</g>
+</g>
+</svg>
     </div>
     <div class="diagram-caption">图 5：TMVP 时域 MV 提取与 POC 缩放流水线</div>
 
