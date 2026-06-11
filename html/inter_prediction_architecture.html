@@ -766,9 +766,18 @@
       </thead>
       <tbody>
         <tr>
-          <td><strong>最优运动矢量 (Best MV)</strong></td>
+          <td><strong>候选运动矢量集合<br>(Best MV Candidates)</strong></td>
           <td>(16-bit X + 16-bit Y) × 2 (List0 & List1) = 64 bits</td>
-          <td>ME 精搜最终收敛得到的 1/4 像素级最优 MV。RDO 需要它来减去 AMVP predictor 从而计算精确的 <code>MVD Bits</code>。</td>
+          <td>
+            <div style="font-size: 13px; line-height: 1.5;">
+              <strong>选出机制：</strong>由 ME 引擎在 1/4 像素精搜阶段，根据最小的 <strong>SATD 代价 (SATD + &lambda; &middot; Approx_MVD_Bits)</strong> 从所有搜索点中胜出。<br>
+              <strong>候选数量：</strong>标准做法是强制透传 <strong>3 组最优候选</strong>给 RDO：<br>
+              1. <strong>Top 1 L0 MV</strong> (前向最优)<br>
+              2. <strong>Top 1 L1 MV</strong> (后向最优)<br>
+              3. <strong>Bi-pred MV Pair</strong> (通常直接取 L0 和 L1 的最优组合作双向测试)。<br>
+              <strong>RDO 使用场景：</strong>RDO 会依次让这 3 组 MV 减去后端精准计算的 AMVP Predictor，送入 CABAC 算真实的 MVD Bits，并基于变换量化 (T/Q) 算出真实的 SSD 失真，最终决出胜者。
+            </div>
+          </td>
         </tr>
         <tr>
           <td><strong>参考帧索引 (RefIdx)</strong></td>
