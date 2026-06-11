@@ -39,15 +39,15 @@
         <text x="130" y="65" font-size="12" font-weight="bold" fill="#1e3a8a" text-anchor="middle">多级精搜 (基于 MVP 的有限网格)</text>
         <text x="130" y="85" font-size="11" fill="#475569" text-anchor="middle">代价计算: 估算 SATD + 简单 Bits</text>
         
-        <!-- Adjusted vertical arrow to avoid text overlap -->
-        <path d="M 130 95 L 130 115" stroke="#3b82f6" stroke-width="2" fill="none" marker-end="url(#arrowhead-blue)"/>
+        <!-- Block arrow downward -->
+        <polygon points="126,95 134,95 134,107 138,107 130,115 122,107 126,107" fill="#3b82f6"/>
         
         <!-- Top 3 Filter -->
         <rect x="40" y="120" width="180" height="30" fill="#bfdbfe" rx="4" stroke="#60a5fa" stroke-width="1"/>
         <text x="130" y="140" font-size="12" font-weight="bold" fill="#1e40af" text-anchor="middle">精细筛选 (降维推荐)</text>
         
-        <!-- Adjusted vertical arrow -->
-        <path d="M 130 155 L 130 170" stroke="#3b82f6" stroke-width="2" fill="none" marker-end="url(#arrowhead-blue)"/>
+        <!-- Block arrow downward -->
+        <polygon points="126,155 134,155 134,162 138,162 130,170 122,162 126,162" fill="#3b82f6"/>
         
         <!-- 3 Candidates -->
         <rect x="20" y="175" width="220" height="65" fill="#ffffff" rx="4" stroke="#93c5fd" stroke-width="1" stroke-dasharray="4,4"/>
@@ -78,14 +78,14 @@
         <text x="145" y="65" font-size="12" font-weight="bold" fill="#065f46" text-anchor="middle">接收 3 组候选，启动最昂贵计算</text>
         <text x="145" y="85" font-size="11" fill="#475569" text-anchor="middle">代价计算: 真实 DCT -> Quant -> CABAC</text>
         
-        <path d="M 145 95 L 145 115" stroke="#10b981" stroke-width="2" fill="none" marker-end="url(#arrowhead-green)"/>
+        <polygon points="141,95 149,95 149,107 153,107 145,115 137,107 141,107" fill="#10b981"/>
         
         <!-- Cost comparison -->
         <rect x="40" y="120" width="210" height="45" fill="#a7f3d0" rx="4" stroke="#34d399" stroke-width="1"/>
         <text x="145" y="137" font-size="12" font-weight="bold" fill="#047857" text-anchor="middle">真实 RD Cost = SSD + λ·Real_Bits</text>
         <text x="145" y="155" font-size="11" fill="#064e3b" text-anchor="middle">对 3 个候选进行残酷比较</text>
 
-        <path d="M 145 170 L 145 190" stroke="#10b981" stroke-width="2" fill="none" marker-end="url(#arrowhead-green)"/>
+        <polygon points="141,170 149,170 149,182 153,182 145,190 137,182 141,182" fill="#10b981"/>
         
         <!-- Winner -->
         <rect x="60" y="195" width="170" height="45" fill="#ffffff" rx="6" stroke="#059669" stroke-width="3"/>
