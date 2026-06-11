@@ -98,6 +98,32 @@
         .arrow-line { width: 100%; height: 4px; background: #3b82f6; position: relative; }
         .arrow-line::after { content: ''; position: absolute; right: -5px; top: -6px; border-top: 8px solid transparent; border-bottom: 8px solid transparent; border-left: 10px solid #3b82f6; }
     
+    
+        /* Gantt Chart CSS */
+        .gantt-container { background: #fff; border: 1px solid #e2e8f0; border-radius: 8px; padding: 20px; margin: 20px 0; overflow-x: auto; box-shadow: 0 4px 6px rgba(0,0,0,0.02); }
+        .gantt-title { font-size: 14px; font-weight: bold; color: #334155; margin-bottom: 15px; text-align: center; }
+        .gantt-row { display: flex; align-items: center; margin-bottom: 10px; }
+        .gantt-label { width: 80px; font-size: 12px; font-weight: bold; color: #475569; }
+        .gantt-track { flex-grow: 1; display: flex; background: #f1f5f9; border-radius: 4px; height: 30px; position: relative; }
+        .gantt-block { display: flex; align-items: center; justify-content: center; height: 100%; font-size: 11px; font-weight: bold; color: white; border-right: 1px solid rgba(255,255,255,0.2); transition: all 0.3s; }
+        .gantt-block:last-child { border-right: none; }
+        
+        .gb-memd { background: #3b82f6; width: 20%; border-radius: 4px 0 0 4px; }
+        .gb-meqn { background: #8b5cf6; width: 20%; }
+        .gb-mc { background: #10b981; width: 15%; }
+        .gb-rdo { background: #f59e0b; width: 45%; border-radius: 0 4px 4px 0; }
+        .gb-wait { background: #e2e8f0; border: 1px dashed #cbd5e1; color: #94a3b8; }
+        
+        .dependency-arrow { position: absolute; height: 20px; border-left: 2px dashed #ef4444; border-bottom: 2px dashed #ef4444; width: 20px; }
+        .dependency-arrow::after { content: ''; position: absolute; right: -5px; bottom: -6px; border-top: 5px solid transparent; border-bottom: 5px solid transparent; border-left: 6px solid #ef4444; }
+        
+        pre.c-code { background: #1e1e1e; color: #d4d4d4; padding: 15px; border-radius: 6px; font-family: 'Consolas', monospace; font-size: 13px; overflow-x: auto; margin: 15px 0; border-left: 4px solid #ef4444;}
+        .c-keyword { color: #569cd6; }
+        .c-comment { color: #6a9955; }
+        .c-variable { color: #9cdcfe; }
+        .c-function { color: #dcdcaa; }
+        .c-enum { color: #4fc1ff; }
+    
     </style>
 </head>
 <body>
@@ -702,15 +728,100 @@
       在我们的硬件设计中，最大的瓶颈在于 RDO 对重构 MV 的强数据依赖，这会导致后续流水线气泡 (Bubble)。为了解决这个问题，我们的 <strong>ME 模块完全脱离标准约束</strong>，建立了一套自己专用的、仅依赖于粗略流水阶段的“前端缓存字典”。这意味着 ME 拿到的 MVP 可能在数值上与标准 RDO 的 MVP 有偏差，但能实现 100% 的并行化延迟掩盖，而 RDO 依然恪守标准的重构流。
     </div>
 
-    <div class="algo-steps" style="border-left-color: #ef4444; background-color: #fef2f2;">
-        <strong class="title" style="color: #ef4444;">🔍 C-Model 代码印证：解耦获取机制 (xGetNeighborAvailable)</strong>
-        <p style="margin-top: 5px; font-size: 13px;">在我们的 C-Model (<code>inter_mode.c</code>) 中，这种“前端字典掩盖延迟”的设计体现得淋漓尽致。当执行 <code>xGetNeighborAvailable()</code> 时，并非总是去拿最终的重构 MV，而是根据硬件流水线级数 <code>cuRefineStage</code> 或 <code>mvpMode</code> 切换底层数据源：</p>
-        <ol style="font-size: 13px;">
-            <li><strong>MEMD 粗略上下文 (HW_STAGE_MEMD)：</strong> 当流水线处于前端的 MEMD 阶段时，代码强制越过标准重构结构，从专属的 <code>pneighbor_cu->memdMvCtx</code> 中读取。这个 Context 缓存的是邻接块在早期流水线刚刚产生的“半成品”结果。</li>
-            <li><strong>特定精度预测子 (fracMvCtx)：</strong> 针对层层递进的精搜，代码支持直接读取 <code>NEIGHBOR_1_4_MV</code> (1/4像素) 或 <code>NEIGHBOR_1_2_MV</code> (半像素) 的 <code>fracMvCtx</code> 缓存。</li>
-            <li><strong>打断依赖链 (100% 并行化)：</strong> 这意味着当前宏块的 ME 引擎，<strong>绝不需要</strong>等待其左侧宏块跑完漫长的 RDO 与 CABAC。只要左侧宏块跑完了初期的 MEMD，当前宏块就能无缝拿到 <code>memdMvCtx</code> 这个“伪 MVP”并立即发射。在硬件流水线甘特图上，这完美实现了 <strong>ME(块N) 与 RDO(块N-1) 的 100% 时间重叠掩盖</strong>。</li>
-        </ol>
+    
+    <div style="margin-top: 30px;">
+        <h4 style="color: #ef4444; border-bottom: 1px solid #fecaca; padding-bottom: 10px;">🔍 C-Model 核心印证：解耦获取机制的具体实现</h4>
+        <p>在我们的 <code>inter_mode.c</code> 的 <code>xGetNeighborAvailable()</code> 函数中，解耦机制被分为了三个精密设计的子模块。以下是基于算法架构的详细拆解：</p>
+
+        <!-- Subsection 1 -->
+        <div style="background: #fef2f2; border: 1px solid #fecaca; border-radius: 8px; padding: 20px; margin-bottom: 25px;">
+            <h5 style="color: #b91c1c; margin-top: 0; font-size: 16px;">1. MEMD 粗略上下文 (HW_STAGE_MEMD)</h5>
+            <p style="font-size: 14px; color: #450a0a;"><strong>算法原理：</strong>MEMD（运动估计与模式决策初步阶段）跑完后，会产生一个中间态的 MV。当后续流水线或邻接块在 MEMD 阶段需要预测子时，如果去等 CABAC 结束重构，耗时极长。因此硬件设计了一个专用的缓存字典 <code>memdMvCtx</code>，强制透传这个半成品。</p>
+            
+            <pre class="c-code">
+<span class="c-comment">// 中文伪代码：当处于 MEMD 硬件级时，打断标准重构链，直接查取 MEMD 缓存字典</span>
+<span class="c-keyword">if</span> (p->cuRefineStage == <span class="c-enum">HW_STAGE_MEMD</span>) {
+    <span class="c-variable">i32</span> puIdx = <span class="c-function">getPUIdxByPartMode</span>(pneighbor_cu, pneighbor_cu->memdMvCtx.part_mode, xN, yN);
+    
+    <span class="c-comment">// 越过邻接块最终的重构 MV，强行读取上一级刚刚落盘的 memdMvCtx</span>
+    *pred_dir = pneighbor_cu-><span class="c-variable">memdMvCtx</span>.mv[puIdx].pred_dir;
+    pneighbor_Mv = &amp;(pneighbor_cu-><span class="c-variable">memdMvCtx</span>.mv[puIdx].mv[<span class="c-enum">0</span>]);
+}</pre>
+        </div>
+
+        <!-- Subsection 2 -->
+        <div style="background: #fef2f2; border: 1px solid #fecaca; border-radius: 8px; padding: 20px; margin-bottom: 25px;">
+            <h5 style="color: #b91c1c; margin-top: 0; font-size: 16px;">2. 特定精度预测子缓存 (fracMvCtx)</h5>
+            <p style="font-size: 14px; color: #450a0a;"><strong>算法原理：</strong>在多级精搜（如从 1/2 像素细化到 1/4 像素）的过程中，后续阶段可以直接把前序阶段的输出作为 MVP。C-Model 专门维护了 <code>fracMvCtx</code> 来保存各特定精度层的历史搜索记录，而无需重新计算。</p>
+
+            <pre class="c-code">
+<span class="c-comment">// 中文伪代码：根据当前需要的精度模式 (mvpMode)，精准定位缓存层</span>
+<span class="c-keyword">if</span> (mvpMode == <span class="c-enum">NEIGHBOR_1_4_MV</span>) {
+    <span class="c-comment">// 如果正在请求 1/4 像素精度 MVP，直接调取对应精度的阵列</span>
+    pneighbor_Mv = &amp;(pneighbor_cu-><span class="c-variable">fracMvCtx</span>.mv[puIdx][<span class="c-enum">0</span>]);
+    *pred_dir = cur_pred_dir;
+} <span class="c-keyword">else if</span> (mvpMode == <span class="c-enum">NEIGHBOR_1_2_MV</span>) {
+    <span class="c-comment">// 请求 1/2 像素精度，调取半像素缓存阵列</span>
+    pneighbor_Mv = &amp;(pneighbor_cu-><span class="c-variable">fracMvCtx</span>.mv_half_pixel[puIdx][<span class="c-enum">0</span>]);
+    *pred_dir = cur_pred_dir;
+}</pre>
+        </div>
+
+        <!-- Subsection 3 -->
+        <div style="background: #fef2f2; border: 1px solid #fecaca; border-radius: 8px; padding: 20px;">
+            <h5 style="color: #b91c1c; margin-top: 0; font-size: 16px;">3. 终极目标：打断依赖链，实现 100% 硬件流水线并行</h5>
+            <p style="font-size: 14px; color: #450a0a;"><strong>算法原理：</strong>由于 <code>xGetNeighborAvailable()</code> 在最底层通过上述两个 <code>Ctx</code> 旁路了真实的数据流，宏块 N+1 的前端 ME 不再需要等待宏块 N 的后端 RDO+CABAC 结束。这种时间轴上的完美重叠，彻底掩盖了延迟。</p>
+            
+            <div class="gantt-container">
+                <div class="gantt-title">硬件宏块级流水线甘特图 (Gantt Chart) 对比</div>
+                
+                <div style="font-size: 12px; color: #64748b; margin-bottom: 5px;">🔴 传统严苛标准：存在巨大气泡延迟 (Bubble)</div>
+                <div class="gantt-row">
+                    <div class="gantt-label">CTU (N)</div>
+                    <div class="gantt-track">
+                        <div class="gantt-block gb-memd">MEMD</div>
+                        <div class="gantt-block gb-meqn">MEQN</div>
+                        <div class="gantt-block gb-mc">MC</div>
+                        <div class="gantt-block gb-rdo">RDO & CABAC 重构结束</div>
+                        <div class="dependency-arrow" style="top: 30px; left: 95%; width: 5%; height: 15px;"></div>
+                    </div>
+                </div>
+                <div class="gantt-row" style="margin-bottom: 25px;">
+                    <div class="gantt-label">CTU (N+1)</div>
+                    <div class="gantt-track">
+                        <div class="gantt-block gb-wait" style="width: 100%; display: flex; justify-content: center; font-style: italic;">等待宏块 N 完全重构... (Stall)</div>
+                        <div class="gantt-block gb-memd" style="width: 20%; position: absolute; left: 100%; border-radius: 4px;">MEMD</div>
+                    </div>
+                </div>
+
+                <div style="font-size: 12px; color: #16a34a; margin-bottom: 5px; font-weight: bold;">🟢 C-Model 优化后：通过 memdMvCtx 实现 100% 重叠并行</div>
+                <div class="gantt-row">
+                    <div class="gantt-label">CTU (N)</div>
+                    <div class="gantt-track">
+                        <div class="gantt-block gb-memd" style="position: relative;">MEMD
+                           <div class="dependency-arrow" style="border-color: #10b981; top: 30px; left: 80%; width: 20%; height: 15px;"></div>
+                        </div>
+                        <div class="gantt-block gb-meqn">MEQN</div>
+                        <div class="gantt-block gb-mc">MC</div>
+                        <div class="gantt-block gb-rdo">RDO & CABAC 重构进行中...</div>
+                    </div>
+                </div>
+                <div class="gantt-row">
+                    <div class="gantt-label">CTU (N+1)</div>
+                    <div class="gantt-track">
+                        <div class="gantt-block gb-wait" style="width: 20%;">Wait</div>
+                        <!-- N+1 Starts directly after N's MEMD -->
+                        <div class="gantt-block gb-memd" style="width: 20%;">获取 memdMvCtx</div>
+                        <div class="gantt-block gb-meqn">MEQN</div>
+                        <div class="gantt-block gb-mc">MC</div>
+                        <div class="gantt-block gb-rdo" style="width: 25%; border-radius: 0 4px 4px 0;">RDO</div>
+                    </div>
+                </div>
+                <div style="text-align: center; margin-top: 8px; font-size: 12px; color: #64748b;">* 通过旁路缓存机制，消除了长达整个 RDO 阶段的 Bubble 时间。</div>
+            </div>
+        </div>
     </div>
+    
 
     <hr style="margin: 50px 0; border: 1px solid #e0e0e0;">
 
